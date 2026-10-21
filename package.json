@@ -1,0 +1,14 @@
+{
+  "name": "swim-os",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "description": "SWIM OS: generador inteligente de entrenamientos de natación (PWA sin dependencias de compilación).",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "sw": "node scripts/gen-sw.mjs",
+    "check": "node scripts/check.mjs",
+    "verify": "node scripts/check.mjs && node --test tests/*.test.mjs"
+  },
+  "engines": { "node": ">=20" }
+}
