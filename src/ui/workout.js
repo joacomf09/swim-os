@@ -1,7 +1,7 @@
 // Pantalla "Hoy" (resumen + acciones) y "Rutina" (editor manual).
 import { html, useState, useMemo, Icon, Art, Sheet, Stepper, Issues, fmtM, laps, lapWord, dateLong, clock } from './kit.js';
 import { BLOCKS, BLOCK_ORDER, BY_ID, EXERCISES, CATEGORIES, EQUIPMENT, variantsOf, intensityText, resolveItem, DIFFICULTY_LABEL } from '../library.js';
-import { plannedMeters, blockMeters, distanceStatus, validateWorkout, estimateItems, updateItem, swapExercise, removeItem, moveItem, moveToBlock, addItem, fitToTarget, acceptPlanned, startCheck, measuredPace, GOALS, INTENSITIES } from '../engine/index.js';
+import { plannedMeters, blockMeters, distanceStatus, validateWorkout, estimateItems, updateItem, swapExercise, removeItem, moveItem, moveToBlock, addItem, fitToTarget, acceptPlanned, startCheck, measuredPace, GOALS, INTENSITIES, unitOf } from '../engine/index.js';
 
 export function DistanceBadge({ w }) {
   const s = distanceStatus(w);
@@ -78,7 +78,7 @@ export function ExercisePicker({ title, equipment, allowNoGear, onPick, onClose,
 function ItemEditor({ w, it, index, count, onChange, onSwap, onRemove, onMove, onBlock }) {
   const [open, setOpen] = useState(false);
   const { ex } = resolveItem(it);
-  const unit = w.pool * ((ex && ex.unitMult) || 1);
+  const unit = unitOf(ex, w.pool);
   const m = it.reps * it.dist;
   return html`<li className="ed">
     <button type="button" className="ed-h" aria-expanded=${open} onClick=${() => setOpen(!open)}>

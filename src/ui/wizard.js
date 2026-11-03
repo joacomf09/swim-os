@@ -17,7 +17,7 @@ function StepDistance({ cfg, set, history, fixIssues }) {
     <h2>¿Cuántos metros querés nadar?</h2>
     <div className="chips">${QUICK_DISTANCES.map((d) => html`<button key=${d} type="button" className="opt" aria-pressed=${cfg.total === d} onClick=${() => set({ total: d })}><b className="num">${fmtM(d)}</b><small>m</small></button>`)}</div>
     <div className="field"><label htmlFor="tot">Otra distancia</label>
-      <input id="tot" type="number" inputMode="numeric" min="25" step=${cfg.pool} value=${custom ? cfg.total : ''} placeholder="Ej.: 1.350" onChange=${(e) => set({ total: Math.round(Number(e.target.value)) || 0 })}/></div>
+      <input id="tot" type="number" inputMode="numeric" min=${cfg.pool * 2} step=${cfg.pool * 2} value=${custom ? cfg.total : ''} placeholder="Ej.: 1.350" onChange=${(e) => set({ total: Math.round(Number(e.target.value)) || 0 })}/></div>
     <${EstimateLine} total=${cfg.total} level=${cfg.level} history=${history}/>
     <${Issues} issues=${issues} onFix=${(f) => set(null, f)}/>
   </div>`;
@@ -25,15 +25,16 @@ function StepDistance({ cfg, set, history, fixIssues }) {
 
 function StepPool({ cfg, set, fixIssues }) {
   const custom = cfg.pool !== 25 && cfg.pool !== 50;
-  const n = cfg.total / cfg.pool;
+  const n = cfg.total / (cfg.pool * 2);
   const issues = fixIssues.filter((i) => i.code === 'TOTAL_MULTIPLE' || i.code === 'POOL');
   return html`<div className="step">
     <h2>¿De cuánto es la piscina?</h2>
     <div className="chips two">${[25, 50].map((p) => html`<button key=${p} type="button" className="opt" aria-pressed=${cfg.pool === p} onClick=${() => set({ pool: p })}><b className="num">${p}</b><small>metros</small></button>`)}</div>
     <div className="field"><label htmlFor="pool">Otra medida (${POOL_MIN}–${POOL_MAX} m)</label>
       <input id="pool" type="number" inputMode="numeric" min=${POOL_MIN} max=${POOL_MAX} value=${custom ? cfg.pool : ''} placeholder="Ej.: 20" onChange=${(e) => set({ pool: Math.round(Number(e.target.value)) || 0 })}/></div>
-    ${Number.isInteger(n) && n > 0 && html`<p className="hint"><b className="num">${fmtM(cfg.total)} m</b> = <b className="num">${fmtM(n)} largos</b> de ${cfg.pool} m. Todas las series van a ser múltiplos exactos.</p>`}
-    ${custom && html`<p className="hint">Con medidas poco comunes las distancias de los ejercicios se adaptan a largos enteros.</p>`}
+    ${Number.isInteger(n) && n > 0 && html`<p className="hint"><b className="num">${fmtM(cfg.total)} m</b> = <b className="num">${fmtM(n)} ${n === 1 ? 'ida y vuelta' : 'idas y vueltas'}</b> de ${cfg.pool * 2} m.</p>`}
+    <p className="hint">📱 El celular queda en la pared de salida: cada serie termina donde empezó, así que todo va en múltiplos de <b className="num">${cfg.pool * 2} m</b>${cfg.pool === 25 ? ' (50 m en piscina de 25)' : cfg.pool === 50 ? ' (el control es siempre a los 100 m)' : ''}.</p>
+    ${custom && html`<p className="hint">Con medidas poco comunes las series se adaptan a idas y vueltas enteras.</p>`}
     <${Issues} issues=${issues} onFix=${(f) => set(null, f)}/>
   </div>`;
 }
@@ -99,7 +100,7 @@ function StepBlocks({ cfg, set }) {
     })}
       <button type="button" className=${'opt dist-o' + (custom ? ' on' : '')} aria-pressed=${custom} onClick=${() => set({ distribution: 'custom' })}><b>Personalizado</b><small>Metros exactos</small></button></div>
     <div className="blocks-ed">${BLOCK_ORDER.map((b) => html`<div key=${b} className="blk-row"><span><i style=${{ background: BLOCKS[b].color }}></i>${BLOCKS[b].name}</span>
-      ${custom ? html`<${Stepper} label=${BLOCKS[b].name} value=${cfg.blocks[b]} step=${cfg.pool} min=${0} max=${cfg.total} unit="m" onChange=${(v) => setBlock(b, v)}/>` : html`<b className="num">${fmtM(cfg.blocks[b])} m</b>`}</div>`)}</div>
+      ${custom ? html`<${Stepper} label=${BLOCKS[b].name} value=${cfg.blocks[b]} step=${cfg.pool * 2} min=${0} max=${cfg.total} unit="m" onChange=${(v) => setBlock(b, v)}/>` : html`<b className="num">${fmtM(cfg.blocks[b])} m</b>`}</div>`)}</div>
     <div className=${'note ' + (diff === 0 ? 'ok' : 'bad')}>${diff === 0 ? html`<${Icon} n="check"/> Suman exactamente ${fmtM(cfg.total)} m.` : html`<${Icon} n="warn"/> Asignaste ${fmtM(sum)} m de ${fmtM(cfg.total)} m — ${diff > 0 ? 'faltan' : 'sobran'} ${fmtM(Math.abs(diff))} m.`}</div>
   </div>`;
 }

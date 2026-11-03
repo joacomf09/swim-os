@@ -58,7 +58,7 @@ export function makeEntry(session, summary) {
     pool: w.pool, level: w.config ? w.config.level : null,
     meters: summary.meters, plannedMeters: summary.plannedMeters, reps: summary.reps, plannedReps: summary.plannedReps,
     activeSeconds: summary.activeSeconds, restSeconds: summary.restSeconds, totalSeconds: summary.totalSeconds,
-    pace100: summary.pace100, compliance: summary.compliance, completed: summary.completed,
+    pace100: summary.pace100, compliance: summary.compliance, completed: summary.completed, autoClosed: !!session.autoClosed,
     log, workout: { config: w.config, items: w.items, target: w.target, pool: w.pool, blockTargets: w.blockTargets, seed: w.seed, name: w.name },
   };
 }

@@ -9,3 +9,4 @@ export * from './editing.js';
 export * from './estimate.js';
 export { buildCandidates } from './candidates.js';
 export * from './history.js';
+export * from './quick.js';

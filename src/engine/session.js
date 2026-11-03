@@ -34,6 +34,11 @@ export function createSession(workout, now = Date.now()) {
   };
 }
 
+/** Una sesión abierta más de este tiempo se cierra sola (típico: te olvidás de finalizar). */
+export const MAX_SESSION_MS = 2 * 60 * 60 * 1000;
+/** Una serie en curso más larga que esto se considera olvidada y no cuenta como nadada. */
+const MAX_REP_MS = 20 * 60 * 1000;
+
 const live = (s) => s.phase === 'swim' || s.phase === 'rest';
 
 /** Milisegundos transcurridos en la fase actual (congelado si está en pausa). */
@@ -159,7 +164,32 @@ export function summarize(s, now = Date.now()) {
     pace100: enough ? Math.round((activeSeconds / p.meters) * 100 * 10) / 10 : null,
     compliance: p.planned ? Math.round((p.meters / p.planned) * 100) : 0,
     completed: s.steps.length > 0 && p.repsDone === s.steps.length,
+    autoClosed: !!s.autoClosed,
   };
+}
+
+/** ¿Lleva abierta más de 2 horas? (desde que empezó, o desde que se creó si nunca arrancó) */
+export function isExpired(s, now = Date.now()) {
+  if (!s || s.phase === 'done') return false;
+  return now - (s.startedAt ?? s.createdAt) > MAX_SESSION_MS;
+}
+
+/**
+ * Cierra una sesión vencida: termina a las 2 h exactas de haber empezado y
+ * descarta la serie en curso si quedó corriendo (no se inventa tiempo de nado).
+ * Una sesión que nunca arrancó simplemente se descarta (devuelve null).
+ */
+export function expire(s, now = Date.now()) {
+  if (!isExpired(s, now)) return s;
+  if (!s.startedAt) return null;
+  const end = s.startedAt + MAX_SESSION_MS;
+  let t = s;
+  if (isPaused(t)) t = { ...t, pausedAt: null, pausedMs: t.pausedMs + (end - t.pausedAt > 0 ? end - t.pausedAt : 0), phaseStart: t.phaseStart };
+  if (t.phase === 'swim') {
+    const swimMs = Math.max(0, end - t.phaseStart);
+    if (swimMs > 0 && swimMs <= MAX_REP_MS) t = { ...t, log: putLog(t, { idx: t.idx, swimMs, restMs: 0, skipped: false, partial: true }) };
+  }
+  return { ...t, phase: 'done', endedAt: end, autoClosed: true };
 }
 
 /** Un estado guardado puede estar corrupto: lo valida antes de reanudar. */

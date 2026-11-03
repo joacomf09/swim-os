@@ -145,3 +145,33 @@ test('estimación: orientativa sin historial, medida con historial', () => {
   assert.equal(estimateFromTotal(1500, { history: hist }).source, 'history');
   assert.equal(estimateFromTotal(1500).source, 'orientative');
 });
+
+test('cierre automático: una sesión olvidada 107 h se cierra a las 2 h y no inventa tiempo', () => {
+  const H = 3600000;
+  let s = S.start(S.createSession(gen({ seed: 21 }), T0), T0);
+  s = S.finishRep(s, T0 + 40000);          // una serie hecha de verdad
+  s = S.skipRest(s, T0 + 50000);
+  s = S.start(s, T0 + 60000);              // la siguiente queda corriendo y te olvidás
+  assert.equal(S.isExpired(s, T0 + 1 * H), false);
+  assert.equal(S.isExpired(s, T0 + 2 * H + 1000), true);
+  const done = S.expire(s, T0 + 107 * H);
+  assert.equal(done.phase, 'done');
+  assert.equal(done.autoClosed, true);
+  assert.equal(done.endedAt, T0 + 2 * H);
+  const sum = S.summarize(done, T0 + 107 * H);
+  assert.equal(sum.reps, 1);                        // solo la serie real
+  assert.ok(sum.totalSeconds <= 7200);              // nunca 107 horas
+  assert.equal(sum.autoClosed, true);
+});
+
+test('cierre automático: sesión pausada y sesión que nunca empezó', () => {
+  const H = 3600000;
+  let s = S.start(S.createSession(gen({ seed: 22 }), T0), T0);
+  s = S.pause(S.finishRep(s, T0 + 30000), T0 + 31000);
+  const d = S.expire(s, T0 + 50 * H);
+  assert.equal(d.phase, 'done');
+  assert.ok(S.totalElapsed(d) <= 2 * H);
+  const idle = S.createSession(gen({ seed: 23 }), T0);
+  assert.equal(S.expire(idle, T0 + 3 * H), null);
+  assert.equal(S.expire(idle, T0 + H), idle);
+});

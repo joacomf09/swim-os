@@ -6,6 +6,7 @@ import { BLOCK_ORDER, BY_ID, variantsOf, itemName } from '../library.js';
 import { plannedMeters, meters, validateWorkout } from './validator.js';
 import { allowedDistances } from './candidates.js';
 import { hashSeed } from './rng.js';
+import { unitOf, cycleOf } from './config.js';
 
 let counter = 0;
 const uid = () => `m${Date.now().toString(36)}${(counter++).toString(36)}`;
@@ -38,7 +39,7 @@ export function swapExercise(w, id, exId, variantId) {
   const v = vs.find((x) => x.id === variantId) || vs[0];
   const items = w.items.map((it) => {
     if (it.id !== id) return it;
-    const unit = w.pool * (ex.unitMult || 1);
+    const unit = unitOf(ex, w.pool);
     const m = meters(it);
     let { reps, dist } = it;
     if (dist % unit !== 0) {
@@ -84,7 +85,7 @@ export function addItem(w, block, exId, variantId) {
   const vs = variantsOf(ex);
   const v = vs.find((x) => x.id === variantId) || vs[0];
   const ds = allowedDistances(ex, v, w.pool);
-  const dist = ds[0] || w.pool * (ex.unitMult || 1);
+  const dist = ds[0] || unitOf(ex, w.pool);
   const missing = ex.equipmentRequired.filter((e) => !(w.config.equipment || []).includes(e));
   const noGear = !!(missing.length && ex.noGearVariant);
   const item = {
@@ -111,7 +112,7 @@ export function fitToTarget(w) {
   const order = [...w.items].reverse().sort((a, b) => BLOCK_ORDER.indexOf(b.block) - BLOCK_ORDER.indexOf(a.block));
   for (const it of order) {
     const ex = BY_ID[it.exId];
-    const unit = w.pool * ((ex && ex.unitMult) || 1);
+    const unit = unitOf(ex, w.pool);
     const m = meters(it) + diff;
     if (m < unit) continue;
     let best = null;
@@ -124,7 +125,7 @@ export function fitToTarget(w) {
     }
     if (best) return touch(w, w.items.map((x) => (x.id === it.id ? { ...x, reps: best.reps, dist: best.dist } : x)));
   }
-  if (diff > 0 && diff % w.pool === 0) {
+  if (diff > 0 && diff % cycleOf(w.pool) === 0) {
     const ex = BY_ID['style-free'];
     const e = addItem({ ...w, config: { ...w.config, equipment: w.config.equipment || [] } }, 'endurance', ex.id, 'easy');
     const added = e.items.find((i) => !w.items.some((o) => o.id === i.id));
@@ -144,3 +145,32 @@ export function startCheck(w) {
 }
 
 export { hashSeed };
+
+/**
+ * Ajusta rutinas guardadas con series que no terminan en la pared del celular
+ * (p. ej. 4×25 en piscina de 25 m → 2×50). Conserva los metros totales.
+ * @returns {{workout:any, changed:boolean}}
+ */
+export function conformToCycle(w) {
+  let changed = false;
+  const items = w.items.map((it) => {
+    const ex = BY_ID[it.exId];
+    const unit = unitOf(ex, w.pool);
+    if (it.dist % unit === 0) return it;
+    const m = it.reps * it.dist;
+    if (m % unit !== 0) return it;
+    let best = null;
+    for (let reps = 1; reps <= m / unit; reps++) {
+      const dist = m / reps;
+      if (dist % unit !== 0) continue;
+      const cost = Math.abs(reps - it.reps);
+      if (!best || cost < best.cost) best = { reps, dist, cost };
+    }
+    if (!best) return it;
+    changed = true;
+    const next = { ...it, reps: best.reps, dist: best.dist };
+    if (it.exId === 'speed-sprint25') { next.exId = 'speed-sprint50'; next.variantId = 'base'; }
+    return next;
+  });
+  return { workout: changed ? { ...w, items, edited: true } : w, changed };
+}

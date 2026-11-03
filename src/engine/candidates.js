@@ -4,7 +4,7 @@
 // "porciones" (repeticiones × distancia) con las que se puede llenar un bloque.
 
 import { EXERCISES, BY_ID, EQUIPMENT, BLOCK_ORDER, variantsOf } from '../library.js';
-import { resolveSelection, levelNumber } from './config.js';
+import { resolveSelection, levelNumber, unitOf } from './config.js';
 
 /** Peso de cada categoría por objetivo y bloque. Lo no listado pesa poco. */
 const W = {
@@ -80,10 +80,11 @@ export function maxReps(variant, ex, config) {
  * adaptan a largos enteros; con 25 y 50 m solo valen las distancias exactas.
  */
 export function allowedDistances(ex, variant, pool) {
-  const unit = pool * (ex.unitMult || 1);
+  const unit = unitOf(ex, pool);
   let ds = variant.dist.filter((d) => d % unit === 0);
-  if (!ds.length && pool !== 25 && pool !== 50) {
-    ds = Array.from(new Set(variant.dist.map((d) => Math.max(1, Math.round(d / unit)) * unit)));
+  // Ejercicios cortos (técnica, pataleo) se llevan al siguiente múltiplo; los sprints con distancia fija no.
+  if (!ds.length && variant.kind !== 'sprint') {
+    ds = Array.from(new Set(variant.dist.map((d) => Math.max(1, Math.ceil(d / unit)) * unit)));
   }
   return ds.sort((a, b) => a - b);
 }
@@ -116,7 +117,7 @@ function candidatesFor(ex, config, ctx) {
   for (const v of variantsOf(ex)) {
     const dists = allowedDistances(ex, v, config.pool);
     if (!dists.length) {
-      reasons.push(`Sus distancias no encajan con una piscina de ${config.pool} m`);
+      reasons.push(`El celular queda en la pared: las series deben ser múltiplos de ${unitOf(ex, config.pool)} m`);
       continue;
     }
     const blocks = v.blocks.filter((b) => blocksActive.includes(b));

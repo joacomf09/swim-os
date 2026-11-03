@@ -3,7 +3,7 @@
 // correcciones concretas (cada una es un parche que `applyFix` sabe aplicar).
 
 import { BLOCK_ORDER, BLOCKS, BY_ID, EQUIPMENT } from '../library.js';
-import { POOL_MIN, POOL_MAX, VOLUME_WARN, resolveSelection } from './config.js';
+import { POOL_MIN, POOL_MAX, VOLUME_WARN, resolveSelection, cycleOf } from './config.js';
 import { buildCandidates } from './candidates.js';
 import { reachable } from './reach.js';
 
@@ -17,6 +17,7 @@ export function diagnose(config) {
   const err = (code, message, fixes = []) => errors.push({ code, severity: 'error', message, fixes });
   const warn = (code, message, fixes = []) => warnings.push({ code, severity: 'warn', message, fixes });
   const { pool, total } = config;
+  const cy = Number.isInteger(pool) ? cycleOf(pool) : 0; // ida y vuelta
 
   if (!Number.isFinite(total) || total <= 0) {
     err('TOTAL', 'Elegí una distancia total mayor que 0.', [{ label: 'Usar 1.500 m', patch: { set: { total: 1500 } } }]);
@@ -29,16 +30,16 @@ export function diagnose(config) {
   }
   if (errors.length) return { ok: false, errors, warnings, skipped: [] };
 
-  if (total % pool !== 0) {
-    const lo = Math.floor(total / pool) * pool;
-    const hi = Math.ceil(total / pool) * pool;
+  if (total % cy !== 0) {
+    const lo = Math.floor(total / cy) * cy;
+    const hi = Math.ceil(total / cy) * cy;
     const fixes = [];
     if (lo > 0) fixes.push({ label: `Usar ${fmt(lo)} m`, patch: { set: { total: lo } } });
     fixes.push({ label: `Usar ${fmt(hi)} m`, patch: { set: { total: hi } } });
     for (const p of [25, 50, 20, 10]) {
-      if (p !== pool && total % p === 0) { fixes.push({ label: `Piscina de ${p} m (${fmt(total)} m exactos)`, patch: { set: { pool: p } } }); break; }
+      if (p !== pool && total % (2 * p) === 0) { fixes.push({ label: `Piscina de ${p} m (${fmt(total)} m exactos)`, patch: { set: { pool: p } } }); break; }
     }
-    err('TOTAL_MULTIPLE', `${fmt(total)} m no es múltiplo de ${pool} m: no se puede cerrar con largos enteros.`, fixes);
+    err('TOTAL_MULTIPLE', `${fmt(total)} m no es múltiplo de ${cy} m. Con el celular en la pared de salida, cada serie es ida y vuelta (${cy} m).`, fixes);
     return { ok: false, errors, warnings, skipped: [] };
   }
 
@@ -48,8 +49,8 @@ export function diagnose(config) {
   const balanceFix = { label: 'Usar el reparto Equilibrado (20/40/40)', patch: { set: { distribution: 'balanced' } } };
   if (BLOCK_ORDER.some((k) => !Number.isFinite(b[k]) || b[k] < 0)) {
     err('BLOCK_NEG', 'Los metros de cada bloque deben ser 0 o más.', [balanceFix]);
-  } else if (BLOCK_ORDER.some((k) => b[k] % pool !== 0)) {
-    err('BLOCK_MULTIPLE', `Cada bloque debe ser múltiplo de ${pool} m para cerrar con largos enteros.`, [balanceFix]);
+  } else if (BLOCK_ORDER.some((k) => b[k] % cy !== 0)) {
+    err('BLOCK_MULTIPLE', `Cada bloque debe ser múltiplo de ${cy} m (ida y vuelta con el celular en la pared).`, [balanceFix]);
   } else if (sum !== total) {
     const diff = total - sum;
     const fixes = [balanceFix];
@@ -97,30 +98,30 @@ export function diagnose(config) {
       err('BLOCK_EMPTY', `Con lo que elegiste no hay ejercicios posibles para el ${blockName(k)}.${why}`, fixes);
       continue;
     }
-    reach[k] = reachable(list, pool, target / pool);
-    if (!reach[k][target / pool]) {
-      const units = target / pool;
+    reach[k] = reachable(list, cy, target / cy);
+    if (!reach[k][target / cy]) {
+      const units = target / cy;
       let fix = null;
       for (let d = 1; d <= units + 40 && !fix; d++) {
         for (const o of BLOCK_ORDER) {
           if (o === k) continue;
           for (const sign of [1, -1]) {
-            const nk = target + sign * d * pool;
-            const no = b[o] - sign * d * pool;
+            const nk = target + sign * d * cy;
+            const no = b[o] - sign * d * cy;
             if (nk < 0 || no < 0) continue;
-            const rk = reachable(list, pool, nk / pool);
-            if (nk > 0 && !rk[nk / pool]) continue;
+            const rk = reachable(list, cy, nk / cy);
+            if (nk > 0 && !rk[nk / cy]) continue;
             if (no > 0) {
               const lo = cb.byBlock[o];
-              if (!lo.length || !reachable(lo, pool, no / pool)[no / pool]) continue;
+              if (!lo.length || !reachable(lo, cy, no / cy)[no / cy]) continue;
             }
-            fix = { label: `Pasar ${fmt(d * pool)} m ${sign > 0 ? `del ${blockName(o)} al ${blockName(k)}` : `del ${blockName(k)} al ${blockName(o)}`}`, patch: { set: { blocks: { [k]: nk, [o]: no } } } };
+            fix = { label: `Pasar ${fmt(d * cy)} m ${sign > 0 ? `del ${blockName(o)} al ${blockName(k)}` : `del ${blockName(k)} al ${blockName(o)}`}`, patch: { set: { blocks: { [k]: nk, [o]: no } } } };
             break;
           }
           if (fix) break;
         }
       }
-      err('BLOCK_UNREACHABLE', `No se puede armar un ${blockName(k)} de exactamente ${fmt(target)} m con los ejercicios y la piscina de ${pool} m elegidos.`,
+      err('BLOCK_UNREACHABLE', `No se puede armar un ${blockName(k)} de exactamente ${fmt(target)} m con los ejercicios elegidos y series de ida y vuelta (${cy} m).`,
         [...(fix ? [fix] : []), ...equipFixes(), ...stylesFix]);
     }
   }

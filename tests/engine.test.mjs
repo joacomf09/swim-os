@@ -6,17 +6,17 @@ import { regenerateBlock, generateAlternative, diagnose, applyFix, normalizeConf
 const ALL = ['styles', 'arms', 'legs', 'technique', 'speed', 'endurance'];
 const noErrors = (w) => { const v = validateWorkout(w, { config: w.config, strict: true }); assert.deepEqual(v.errors, [], v.errors.map((e) => e.message).join(' | ')); return v; };
 
-test('1. 1.500 m en piscina de 25 m suma exacto y cada serie es múltiplo de 25', () => {
+test('1. 1.500 m en piscina de 25 m suma exacto y cada serie es múltiplo de 50 (ida y vuelta)', () => {
   const w = gen({ total: 1500, pool: 25, seed: 11 });
   assert.equal(plannedMeters(w.items), 1500);
-  for (const it of w.items) assert.equal(it.dist % 25, 0, it.name);
+  for (const it of w.items) assert.equal(it.dist % 50, 0, it.name);
   noErrors(w);
 });
 
-test('2. 2.000 m en piscina de 50 m: todo múltiplo de 50, sin sprints de 25', () => {
+test('2. 2.000 m en piscina de 50 m: todo múltiplo de 100, sin sprints de 25 ni 50', () => {
   const w = gen({ total: 2000, pool: 50, seed: 5, selection: sel(ALL, ['style-free']) });
   assert.equal(plannedMeters(w.items), 2000);
-  for (const it of w.items) { assert.equal(it.dist % 50, 0, it.name); assert.notEqual(it.exId, 'speed-sprint25'); }
+  for (const it of w.items) { assert.equal(it.dist % 100, 0, it.name); assert.notEqual(it.exId, 'speed-sprint25'); }
   noErrors(w);
 });
 
@@ -127,7 +127,7 @@ test('9c. mover serie dentro del bloque; intercambiar ejercicio mantiene múltip
   }
   const it = w.items[0];
   const s = swapExercise(w, it.id, 'style-back', 'easy');
-  for (const x of s.items) assert.equal(x.dist % 50, 0);
+  for (const x of s.items) assert.equal(x.dist % 100, 0);
 });
 
 test('10. configuración imposible: se explica con arreglos concretos', () => {
@@ -204,4 +204,33 @@ test('alta intensidad no es todo al máximo', () => {
     assert.ok(hard / 1500 <= 0.35, `seed ${seed}: ${hard} m a tope`);
     assert.ok(w.items.some((i) => i.rpe <= 5));
   }
+});
+
+test('checkpoint: con el celular en la pared, toda serie es múltiplo de 2 largos (muchas semillas)', () => {
+  for (const [pool, cycle] of [[25, 50], [50, 100]]) {
+    for (let seed = 1; seed <= 60; seed++) {
+      const w = gen({ seed, pool, total: 2000, selection: sel(ALL, ['style-free']), equipment: ['board', 'buoy', 'paddles', 'fins'] });
+      for (const it of w.items) assert.equal(it.dist % cycle, 0, `${it.name} ${it.reps}×${it.dist} (pileta ${pool}, seed ${seed})`);
+      assert.equal(plannedMeters(w.items), 2000);
+    }
+  }
+});
+
+test('checkpoint: totales que no cierran ida y vuelta se rechazan con arreglos', () => {
+  const d = diagnose(normalizeConfig(cfg({ total: 1750, pool: 50 })));
+  assert.equal(d.errors[0].code, 'TOTAL_MULTIPLE');
+  assert.ok(d.errors[0].fixes.some((f) => f.patch.set && f.patch.set.total === 1800));
+  assert.ok(d.errors[0].fixes.some((f) => f.patch.set && f.patch.set.total === 1700));
+});
+
+test('checkpoint: rutinas guardadas con 4×25 se adaptan sin cambiar los metros', async () => {
+  const { conformToCycle } = await import('../src/engine/editing.js');
+  const { defaultWorkout } = await import('../src/legacy.js');
+  const w = defaultWorkout();
+  const before = plannedMeters(w.items);
+  const { workout, changed } = conformToCycle(w);
+  assert.equal(changed, true);
+  assert.equal(plannedMeters(workout.items), before);
+  for (const it of workout.items) assert.equal(it.dist % 50, 0, it.name);
+  assert.deepEqual(validateWorkout(workout, { config: workout.config }).errors, []);
 });

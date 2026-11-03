@@ -3,7 +3,7 @@ import { html, useState, Icon, Segmented, Stepper } from './kit.js';
 import { LEVELS, EQUIPMENT, EQUIPMENT_ORDER, BY_ID } from '../library.js';
 import { INTENSITIES, REST_MODES, GOALS } from '../engine/index.js';
 
-export function Settings({ prefs, setPrefs, onExport, onImport, onReset, msg, version }) {
+export function Settings({ prefs, setPrefs, onExport, onImport, onReset, onInstall, msg, version, upd, onUpdate }) {
   const [confirm, setConfirm] = useState(false);
   const set = (p) => setPrefs({ ...prefs, ...p });
   const toggleEq = (e) => set({ equipment: prefs.equipment.includes(e) ? prefs.equipment.filter((x) => x !== e) : [...prefs.equipment, e] });
@@ -20,6 +20,14 @@ export function Settings({ prefs, setPrefs, onExport, onImport, onReset, msg, ve
       <div className="field"><label>Intensidad</label><${Segmented} label="Intensidad" value=${prefs.intensity} options=${Object.values(INTENSITIES).map((i) => [i.id, i.name])} onChange=${(v) => set({ intensity: v })}/></div>
       <div className="field"><label>Descansos</label><${Segmented} label="Descansos" value=${prefs.restMode} options=${Object.values(REST_MODES).map((i) => [i.id, i.name])} onChange=${(v) => set({ restMode: v })}/></div></section>
     ${prefs.excluded.length > 0 && html`<section className="card"><h2>Ejercicios excluidos</h2><ul className="mini">${prefs.excluded.map((id) => html`<li key=${id}>${BY_ID[id] ? BY_ID[id].name : id} <button type="button" className="btn small" onClick=${() => set({ excluded: prefs.excluded.filter((x) => x !== id) })}>Permitir</button></li>`)}</ul></section>`}
+    <section className="card"><h2>Actualizaciones</h2>
+      <p className="muted small">Versión instalada: <b>${version}</b>${upd && upd.remote ? html` · disponible: <b>${upd.remote}</b>` : ''}</p>
+      ${upd && upd.remote
+        ? html`<div className="tools"><button type="button" className="btn primary" onClick=${onUpdate}>Actualizar de ${version} a ${upd.remote}</button></div>`
+        : html`<div className="tools"><button type="button" className="btn" onClick=${upd && upd.check} disabled=${upd && upd.state === 'checking'}>${upd && upd.state === 'checking' ? 'Buscando…' : 'Buscar actualización'}</button></div>
+          <p className="msg">${upd && upd.state === 'uptodate' ? '✓ Tenés la última versión.' : upd && upd.state === 'offline' ? 'Sin conexión: no pude consultar.' : ''}</p>`}
+    </section>
+    <section className="card"><h2>Instalar en el iPhone</h2><p className="muted small">Añadila a la pantalla de inicio para usarla a pantalla completa y sin conexión.</p><div className="tools"><button type="button" className="btn" onClick=${onInstall}>Ver cómo instalarla</button></div></section>
     <section className="card"><h2>Tus datos</h2>
       <p className="muted small">Todo vive en este dispositivo. Exportá una copia antes de cambiar de móvil o borrar los datos del navegador.</p>
       <div className="tools"><button type="button" className="btn" onClick=${onExport}><${Icon} n="download"/>Exportar copia</button>

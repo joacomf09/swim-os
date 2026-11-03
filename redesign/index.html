@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SWIM OS Rediseños</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Condensed:wght@600;700;800&family=DM+Sans:wght@400;500;700&family=Fraunces:opsz,wght@9..144,400;9..144,600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: selector de opción arriba, teléfono interactivo a la izquierda, notas a la derecha. */
+:root{
+  --bg:#eef2f7; --card:#ffffff; --ink:#0b1630; --mute:#5a6785; --line:#d5dcea; --accent:#1d4ed8; --accent-ink:#ffffff;
+  --f-body:'DM Sans',system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#070d1c;--card:#0f1930;--ink:#eaf0ff;--mute:#93a3c7;--line:#223256;--accent:#5b8cff;--accent-ink:#071029;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#070d1c;--card:#0f1930;--ink:#eaf0ff;--mute:#93a3c7;--line:#223256;--accent:#5b8cff;--accent-ink:#071029;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1040px;margin:0 auto;padding:28px 16px 56px;display:flex;flex-direction:column;gap:22px}
+h1{font:800 38px/1.05 'Barlow Condensed',sans-serif;letter-spacing:.01em;margin:0;text-wrap:balance}
+.lead{margin:6px 0 0;color:var(--mute);max-width:62ch}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.tabs button{font:inherit;text-align:left;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;display:flex;flex-direction:column;gap:2px;min-height:64px}
+.tabs button b{font:700 18px 'Barlow Condensed',sans-serif;letter-spacing:.03em;text-transform:uppercase}
+.tabs button small{color:var(--mute);font-size:12.5px;line-height:1.3}
+.tabs button[aria-selected="true"]{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent) inset}
+.tabs button:focus-visible,.btn:focus-visible,.phone button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.stage{display:grid;grid-template-columns:minmax(0,390px) minmax(0,1fr);gap:28px;align-items:start}
+.notes{display:flex;flex-direction:column;gap:14px}
+.notes h2{font:700 26px 'Barlow Condensed',sans-serif;margin:0;letter-spacing:.02em;text-transform:uppercase}
+.notes p{margin:0;color:var(--mute)}
+.notes ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px}
+.notes li{padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--card);font-size:14.5px}
+.notes li b{display:block}
+.try{border-left:4px solid var(--accent);padding:8px 12px;background:var(--card);border-radius:0 12px 12px 0;font-size:14.5px}
+.picker{display:flex;gap:8px;flex-wrap:wrap}
+.btn{font:inherit;font-weight:700;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:0 16px;min-height:44px;cursor:pointer}
+
+/* Teléfono: cada opción trae su propia paleta dentro del marco. */
+.phone{width:100%;max-width:390px;aspect-ratio:390/760;border-radius:44px;padding:10px;background:#000;box-shadow:0 18px 50px rgba(5,10,30,.35);justify-self:center;position:relative}
+.screen{height:100%;border-radius:34px;overflow:hidden;position:relative;display:flex;flex-direction:column;background:var(--p-bg);color:var(--p-ink)}
+.notch{position:absolute;top:8px;left:50%;transform:translateX(-50%);width:92px;height:24px;border-radius:14px;background:#000;z-index:5}
+.view{position:absolute;inset:0;padding:44px 18px 18px;display:none;flex-direction:column;gap:12px;overflow:hidden}
+.screen[data-view="home"] .v-home,.screen[data-view="train"] .v-train,.screen[data-view="done"] .v-done{display:flex}
+.phone button{font:inherit;cursor:pointer;border:0;color:inherit}
+.phone .cta{color:var(--p-cta-ink)}
+.row{display:flex;gap:8px}
+.mini{flex:1;min-height:44px;border-radius:14px;background:var(--p-card);color:var(--p-ink);font-weight:700;font-size:14px;border:1px solid var(--p-line)!important}
+.cta{min-height:58px;border-radius:18px;background:var(--p-cta);color:var(--p-cta-ink);font-weight:800;font-size:17px;letter-spacing:.06em;text-transform:uppercase;margin-top:auto}
+.small{font-size:12.5px;color:var(--p-mute)}
+.list{display:flex;flex-direction:column;gap:6px;overflow:auto;min-height:0}
+.it{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:9px 12px;border-radius:12px;background:var(--p-card);font-size:14px}
+.it span:last-child{font-variant-numeric:tabular-nums;color:var(--p-mute);white-space:nowrap}
+.tbar{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;color:var(--p-mute);letter-spacing:.08em;text-transform:uppercase}
+.tbar button{background:transparent;color:var(--p-mute);min-height:44px;padding:0 4px;font-size:13px}
+.ex{font-size:25px;line-height:1.08;font-weight:700;margin:0;text-wrap:balance}
+.facts{font-size:14px;color:var(--p-mute)}
+.timer{font-variant-numeric:tabular-nums}
+.vis{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;position:relative}
+.vis svg{width:100%;height:auto;max-height:100%}
+
+/* A · Carril */
+.oA{--p-bg:#06122b;--p-card:#0d1f45;--p-ink:#eaf2ff;--p-mute:#8ea6d6;--p-line:#1b3566;--p-cta:#22d3c5;--p-cta-ink:#04202a;font-family:'DM Sans',sans-serif}
+.oA .ex,.oA .big{font-family:'Barlow Condensed',sans-serif;letter-spacing:.01em}
+.oA .ex{font-size:32px}
+.oA .big{font-size:84px;font-weight:800;line-height:.95}
+.oA .lane-bar{height:8px;border-radius:4px;background:#12305f;position:relative;overflow:hidden}
+.oA .lane-bar i{position:absolute;left:0;top:0;bottom:0;background:#22d3c5}
+/* B · Pulso */
+.oB{--p-bg:#1b2cff;--p-card:#2a3bff;--p-ink:#fff;--p-mute:#c5ccff;--p-line:#4a58ff;--p-cta:#ff6a3d;--p-cta-ink:#190a02}
+.oB .ex,.oB .big{font-family:'Anton',sans-serif;font-weight:400;text-transform:uppercase;letter-spacing:.01em}
+.oB .ex{font-size:30px}
+.oB .big{font-size:112px;line-height:.9}
+.oB .segs{display:grid;grid-template-columns:repeat(20,1fr);gap:3px;height:34px;width:100%}
+.oB .segs i{background:rgba(255,255,255,.18);border-radius:3px;position:relative;overflow:hidden}
+.oB .segs i::after{content:"";position:absolute;inset:0;background:#fff;transform-origin:bottom;transform:scaleY(var(--f,0))}
+.oB .hero-n{font-family:'Anton',sans-serif;font-size:112px;line-height:.9}
+/* C · Agua */
+.oC{--p-bg:#e9fbff;--p-card:rgba(255,255,255,.72);--p-ink:#06324a;--p-mute:#3b6e86;--p-line:#b9e6f2;--p-cta:#0a6e94;--p-cta-ink:#fff;font-family:'DM Sans',sans-serif}
+.oC .ex,.oC .big,.oC .hero-n{font-family:'Fraunces',serif;font-weight:400}
+.oC .ex{font-size:30px}
+.oC .big{font-size:96px;line-height:1}
+.oC .hero-n{font-size:68px;line-height:1}
+.oC .water{position:absolute;left:0;right:0;bottom:0;pointer-events:none}
+.oC .view{z-index:2}
+.oC .watersvg{position:absolute;inset:0;z-index:1}
+/* D · Reloj */
+.oD{--p-bg:#111;--p-card:#1c1c1c;--p-ink:#f4f1ea;--p-mute:#9b978c;--p-line:#333;--p-cta:#ff3b30;--p-cta-ink:#fff;font-family:'IBM Plex Mono',monospace}
+.oD .ex{font-family:'Barlow Condensed',sans-serif;font-size:32px;text-transform:uppercase}
+.oD .big{font-size:64px;font-weight:600;line-height:1}
+.oD .it{font-size:13px;border-radius:6px}
+
+.done-n{font-size:72px;line-height:1;font-weight:800}
+.dots{display:flex;gap:4px;flex-wrap:wrap}
+.dots i{width:10px;height:10px;border-radius:50%;background:var(--p-line)}
+.dots i.on{background:var(--p-cta)}
+.cap{font-size:12px;color:var(--mute);text-align:center;margin-top:8px}
+@media (max-width:820px){.stage{grid-template-columns:1fr}.tabs{grid-template-columns:repeat(2,1fr)}h1{font-size:32px}}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div>
+    <h1>SWIM OS: cuatro formas de rediseñarlo</h1>
+    <p class="lead">Cada opción es un prototipo que funciona. Tocá Iniciar, finalizá una serie y mirá cómo corre el descanso. Todas respetan el celular en la pared: las series van en idas y vueltas (50 m en piscina de 25, 100 m en piscina de 50).</p>
+  </div>
+  <div class="tabs" role="tablist" aria-label="Opciones de rediseño" id="tabs"></div>
+  <div class="stage">
+    <div><div id="phone"></div><p class="cap">Prototipo con una rutina de 1.500 m. El descanso dura 10 s para que lo veas rápido.</p></div>
+    <div class="notes" id="notes"></div>
+  </div>
+</div>
+<script>
+/* Rutina de ejemplo: 1.500 m en piscina de 25 m, todo en múltiplos de 50 m. */
+var WK=[
+ {n:'Crol suave',reps:2,d:200,rest:20,b:'Calentamiento'},
+ {n:'Patada con tabla',reps:4,d:50,rest:20,b:'Calentamiento'},
+ {n:'Brazos con pull buoy',reps:4,d:100,rest:20,b:'Principal'},
+ {n:'Crol sprint',reps:6,d:50,rest:40,b:'Principal'},
+ {n:'Espalda suave',reps:1,d:200,rest:0,b:'Resistencia'}
+];
+var STEPS=[];WK.forEach(function(it,k){for(var r=1;r<=it.reps;r++)STEPS.push({k:k,n:it.n,r:r,reps:it.reps,d:it.d,rest:it.rest,b:it.b,last:r===it.reps})});
+var TOTAL=WK.reduce(function(a,i){return a+i.reps*i.d},0);
+var DEMO_REST=10, SWIM_LOOP=9;
+function fm(n){return String(n).replace(/\B(?=(\d{3})+(?!\d))/g,'.')}
+function mmss(ms){var s=Math.max(0,Math.floor(ms/1000));return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
+
+var OPTS=[
+{key:'A',cls:'oA',name:'Carril',tag:'La piscina como interfaz',
+ notes:{h:'Carril',p:'La pantalla de entrenamiento es el carril. Ves al nadador ir hasta la pared y volver al celular, así que el ciclo de 50 m se entiende sin leer nada.',
+ pts:[['Ida y vuelta visible','El punto recorre el carril y vuelve a la pared donde está el celular.'],['Pared como punto de control','En el descanso el nadador espera en la pared, junto al celular, y el contador corre grande.'],['Bloques como carriles','En Hoy cada bloque es una barra proporcional a sus metros.']],
+ try:'Iniciá, esperá que el nadador vuelva a la pared y tocá Finalizar serie.'}},
+{key:'B',cls:'oB',name:'Pulso',tag:'Tipografía enorme, un solo gesto',
+ notes:{h:'Pulso',p:'Contraste máximo y números gigantes para leer de reojo desde el borde de la piscina. La acción principal siempre es la misma zona de la pantalla.',
+ pts:[['Número de descanso gigante','Se lee a un brazo de distancia con la pantalla mojada.'],['Segmentos que se apagan','Veinte barras se vacían una a una, con relleno continuo, no a saltos.'],['Color por fase','Azul eléctrico al nadar, coral al descansar.']],
+ try:'Finalizá una serie y mirá cómo se vacían las barras.'}},
+{key:'C',cls:'oC',name:'Agua',tag:'Claro, calmo, con movimiento',
+ notes:{h:'Agua',p:'Tema claro para exterior y para quien no quiere pantallas oscuras. El nivel del agua sube con el avance del entrenamiento y las olas siempre se mueven.',
+ pts:[['Progreso que se siente','El nivel de agua sube con cada serie. Terminar es llenar la pantalla.'],['Burbuja de descanso','Una burbuja se encoge de forma continua hasta cero.'],['Serif para los metros','Los números grandes ganan calidez frente al resto de la app.']],
+ try:'Hacé dos series seguidas y mirá subir el agua.'}},
+{key:'D',cls:'oD',name:'Reloj',tag:'El reloj de pared de la pileta',
+ notes:{h:'Reloj',p:'Un reloj de salidas como el de los clubes. La aguja siempre gira y el descanso es una cuña que se consume hasta la próxima salida.',
+ pts:[['Salidas reales','Cada serie sale en un segundo del reloj. Si llegás antes, descansás lo que sobra.'],['Cuña de descanso','El tramo rojo es el descanso que queda hasta la aguja de salida.'],['Mono para los datos','Distancia, serie y tiempo en tipografía monoespaciada.']],
+ try:'Finalizá una serie: la cuña roja marca hasta dónde llega el descanso.'}}
+];
+
+var cur=0, inst={};
+var phoneEl=document.getElementById('phone'), tabsEl=document.getElementById('tabs'), notesEl=document.getElementById('notes');
+
+function tmplHome(o){
+  var lanes=WK.map(function(it,k){var m=it.reps*it.d;return '<div class="it"><span>'+it.reps+'×'+it.d+' '+it.n+'</span><span>'+m+' m</span></div>'}).join('');
+  var hero={
+   A:'<div class="tbar"><span>Hoy · piscina 25 m</span><span>~48 min</span></div><div class="big">'+fm(TOTAL)+'<small style="font-size:26px;color:var(--p-mute)"> m</small></div>'+
+     '<div style="display:flex;flex-direction:column;gap:5px">'+['Calentamiento','Principal','Resistencia'].map(function(b,i){var w=[600,900,0][i];var m=WK.filter(function(x){return x.b===b}).reduce(function(a,x){return a+x.reps*x.d},0);return '<div class="small" style="display:flex;justify-content:space-between"><span>'+b+'</span><span>'+m+' m</span></div><div class="lane-bar"><i style="width:'+(m/TOTAL*100)+'%"></i></div>'}).join('')+'</div>',
+   B:'<div class="tbar"><span>Hoy</span><span>Piscina 25 m</span></div><div class="hero-n">'+fm(TOTAL)+'</div><div class="ex" style="font-size:22px">metros · 30 largos<br>de ida y vuelta</div>',
+   C:'<div class="tbar"><span>Hoy · piscina 25 m</span><span>~48 min</span></div><div class="hero-n">'+fm(TOTAL)+' m</div><div class="small">15 idas y vueltas hasta el celular</div>',
+   D:'<div class="tbar"><span>Hoy · 25 m</span><span>48 min</span></div><div class="big">'+fm(TOTAL)+'</div><div class="small">METROS · SALIDAS CADA SERIE</div>'
+  }[o.key];
+  return '<div class="view v-home">'+hero+'<div class="list">'+lanes+'</div><div class="row"><button class="mini" data-act="rand">Aleatorio</button><button class="mini" data-act="last">Repetir el último</button></div><button class="cta" data-act="go">Iniciar entrenamiento</button></div>';
+}
+function tmplTrain(o){
+  var vis={
+   A:'<svg viewBox="0 0 320 130" role="img" aria-label="Carril de la piscina con el nadador"><rect x="0" y="20" width="320" height="90" rx="10" fill="#0a2a5a"/><g stroke="#2a6fd0" stroke-width="3" stroke-dasharray="3 7"><line x1="0" y1="42" x2="320" y2="42"/><line x1="0" y1="88" x2="320" y2="88"/></g><line x1="14" y1="60" x2="306" y2="60" stroke="#1d4b8f" stroke-width="2" stroke-dasharray="14 10"/><rect x="2" y="18" width="12" height="94" rx="3" fill="#22d3c5"/><g transform="translate(26 8)" fill="none" stroke="#22d3c5" stroke-width="1.6"><rect width="14" height="22" rx="3"/><circle cx="7" cy="17.5" r="1.1" fill="#22d3c5"/></g><g class="sw"><rect x="-16" y="-8" width="32" height="16" rx="8" fill="#eaf2ff"/><circle cx="10" cy="0" r="5" fill="#22d3c5"/></g><text x="160" y="124" text-anchor="middle" fill="#8ea6d6" font-size="11" font-family="DM Sans">celular en la pared · ida y vuelta</text></svg>',
+   B:'<div style="width:100%;display:flex;flex-direction:column;gap:14px;align-items:flex-start"><div class="big timer t-main">00:00</div><div class="segs">'+Array.apply(null,Array(20)).map(function(){return '<i></i>'}).join('')+'</div></div>',
+   C:'<div class="bubble" style="width:230px;height:230px;border-radius:50%;background:radial-gradient(circle at 30% 28%,rgba(255,255,255,.95),rgba(190,235,247,.85) 55%,rgba(120,205,230,.7));box-shadow:0 10px 40px rgba(10,110,148,.25);display:flex;align-items:center;justify-content:center;flex-direction:column;transform:scale(1)"><div class="big timer t-main" style="font-size:72px">00:00</div><div class="small t-sub">nadando</div></div>',
+   D:'<svg viewBox="-110 -110 220 220" role="img" aria-label="Reloj de salidas"><circle r="104" fill="#1c1c1c" stroke="#333" stroke-width="2"/><path class="wedge" fill="#ff3b30" opacity=".85" d=""/><g class="ticks"></g><g class="hand"><line x1="0" y1="14" x2="0" y2="-92" stroke="#f4f1ea" stroke-width="3" stroke-linecap="round"/><circle r="5" fill="#f4f1ea"/></g></svg>'
+  }[o.key];
+  var main=(o.key==='B'||o.key==='C')?'':'<div class="big timer t-main">00:00</div>';
+  return '<div class="view v-train"><div class="tbar"><span class="t-block">Calentamiento</span><button data-act="exit" aria-label="Salir del entrenamiento">Salir</button></div><h3 class="ex t-name">Crol suave</h3><div class="facts t-facts"></div><div class="vis">'+vis+'</div>'+(o.key==='B'||o.key==='C'?'':main)+'<div class="dots t-dots" aria-hidden="true"></div><button class="cta t-btn" data-act="main">Iniciar</button></div>';
+}
+function tmplDone(){return '<div class="view v-done" style="justify-content:center"><div class="small">TERMINASTE</div><div class="done-n">'+fm(TOTAL)+' m</div><div class="facts">17 series · todas cerradas en la pared del celular.</div><button class="cta" data-act="again">Volver al inicio</button></div>'}
+
+function build(o){
+  var st={view:'home',i:0,phase:'ready',t0:0,rt0:0};
+  var el=document.createElement('div');el.className='phone '+o.cls;
+  el.innerHTML='<div class="screen" data-view="home"><div class="notch"></div>'+(o.key==='C'?'<svg class="watersvg" viewBox="0 0 370 740" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="wg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7fd6ee" stop-opacity=".75"/><stop offset="1" stop-color="#2aa3c9" stop-opacity=".85"/></linearGradient></defs><path class="w1" fill="url(#wg)" d=""/><path class="w2" fill="#bdeaf6" opacity=".55" d=""/></svg>':'')+tmplHome(o)+tmplTrain(o)+tmplDone()+'</div>';
+  var scr=el.querySelector('.screen');
+  var o2={o:o,st:st,el:el,scr:scr,level:0};
+  if(o.key==='D'){var g=el.querySelector('.ticks'),h='';for(var i=0;i<60;i++){var a=i*6*Math.PI/180,r1=i%5?96:90,r2=100;h+='<line x1="'+(Math.sin(a)*r1).toFixed(1)+'" y1="'+(-Math.cos(a)*r1).toFixed(1)+'" x2="'+(Math.sin(a)*r2).toFixed(1)+'" y2="'+(-Math.cos(a)*r2).toFixed(1)+'" stroke="#9b978c" stroke-width="'+(i%5?1:2.2)+'"/>'}g.innerHTML=h}
+  el.addEventListener('click',function(e){var b=e.target.closest('[data-act]');if(!b)return;act(o2,b.getAttribute('data-act'))});
+  paintStatic(o2);
+  return o2;
+}
+function setView(x,v){x.st.view=v;x.scr.setAttribute('data-view',v)}
+function act(x,a){
+  var st=x.st,now=performance.now();
+  if(a==='go'){st.i=0;st.phase='ready';setView(x,'train');paintStatic(x)}
+  else if(a==='exit'){setView(x,'home')}
+  else if(a==='again'){setView(x,'home')}
+  else if(a==='rand'||a==='last'){setView(x,'home');var b=x.el.querySelector('[data-act="'+a+'"]');var t=b.textContent;b.textContent=a==='rand'?'Rutina nueva lista':'Último cargado';setTimeout(function(){b.textContent=t},1400)}
+  else if(a==='main'){
+    if(st.phase==='ready'){st.phase='swim';st.t0=now}
+    else if(st.phase==='swim'){var s=STEPS[st.i];if(s.rest>0&&st.i<STEPS.length-1){st.phase='rest';st.rt0=now}else{next(x)}}
+    else if(st.phase==='rest'){next(x)}
+    paintStatic(x);
+  }
+}
+function next(x){var st=x.st;if(st.i>=STEPS.length-1){setView(x,'done');return}st.i++;st.phase='ready'}
+function paintStatic(x){
+  var st=x.st,s=STEPS[st.i],q=function(c){return x.el.querySelector(c)};
+  q('.t-block').textContent=s.b+' · serie '+(st.i+1)+' de '+STEPS.length;
+  var nm=q('.t-name'),fc=q('.t-facts'),bt=q('.t-btn'),sub=q('.t-sub');
+  if(st.phase==='rest'){nm.textContent='Descansá';fc.textContent='Sigue: '+(STEPS[Math.min(st.i+1,STEPS.length-1)].n)+' · '+STEPS[Math.min(st.i+1,STEPS.length-1)].d+' m';bt.textContent='Saltar descanso'}
+  else{nm.textContent=s.n;fc.textContent=s.reps+'×'+s.d+' m · serie '+s.r+' de '+s.reps+' · '+(s.d/50)+(s.d/50===1?' ida y vuelta':' idas y vueltas');bt.textContent=st.phase==='ready'?'Iniciar':'Finalizar serie'}
+  if(sub)sub.textContent=st.phase==='rest'?'descanso':st.phase==='swim'?'nadando':'listo';
+  var d=q('.t-dots');d.innerHTML=STEPS.map(function(_,i){return '<i class="'+(i<st.i||(i===st.i&&st.phase==='rest')?'on':'')+'"></i>'}).join('');
+  x.el.querySelector('.screen').style.setProperty('--p-bg',x.o.key==='B'?(st.phase==='rest'&&st.view==='train'?'#ff6a3d':'#1b2cff'):'');
+  if(x.o.key==='B'){var cta=x.el.querySelectorAll('.cta');cta.forEach(function(c){c.style.setProperty('--p-cta',st.phase==='rest'&&st.view==='train'?'#190a02':'#ff6a3d');c.style.setProperty('--p-cta-ink',st.phase==='rest'&&st.view==='train'?'#fff':'#190a02')})}
+}
+function wave(t,amp,len,speed,y,w){var d='M0 '+y,i;for(i=0;i<=w;i+=10){d+=' L'+i+' '+(y+Math.sin((i/len)+t*speed)*amp).toFixed(1)}return d+' L'+w+' 740 L0 740 Z'}
+function frame(now){
+  var x=inst[cur];if(x){var st=x.st,q=function(c){return x.el.querySelector(c)};
+    var swim=st.phase==='swim',rest=st.phase==='rest';
+    var elapsed=swim?now-st.t0:0,remain=rest?Math.max(0,DEMO_REST*1000-(now-st.rt0)):0;
+    if(rest&&remain<=0&&st.view==='train'){next(x);paintStatic(x)}
+    var key=x.o.key,tm=q('.t-main');
+    if(tm)tm.textContent=rest?mmss(Math.ceil(remain/1000)*1000):mmss(elapsed);
+    if(key==='A'&&st.view==='train'){
+      var p=swim?((elapsed/1000)%SWIM_LOOP)/SWIM_LOOP:0,xx=22+(p<.5?p*2:(1-p)*2)*270,g=q('.sw');g.setAttribute('transform','translate('+xx.toFixed(1)+' 65)'+(p>=.5&&swim?' scale(-1 1)':''));
+      var ex=q('.t-facts');
+    }
+    if(key==='B'&&st.view==='train'){
+      var f=rest?remain/(DEMO_REST*1000):(swim?(((elapsed/1000)%SWIM_LOOP)/SWIM_LOOP):0);
+      var sg=x.el.querySelectorAll('.segs i');sg.forEach(function(e,i){var v=rest?Math.min(1,Math.max(0,f*20-i)):Math.min(1,Math.max(0,f*20-i));e.style.setProperty('--f',v.toFixed(3))});
+    }
+    if(key==='C'){
+      var done=(st.view==='home')?.0:(st.view==='done'?1:(st.i+(swim?Math.min(1,elapsed/1000/SWIM_LOOP):rest?1:0))/STEPS.length);
+      x.level+= (done-x.level)*.08;var y=740-(80+x.level*560),tt=now/1000;
+      q('.w1').setAttribute('d',wave(tt,9,38,1.6,y,370));q('.w2').setAttribute('d',wave(tt,7,52,-1.2,y+10,370));
+      var bb=q('.bubble');if(bb){bb.style.transform='scale('+(rest?(0.45+0.55*remain/(DEMO_REST*1000)):1).toFixed(3)+')'}
+    }
+    if(key==='D'&&st.view==='train'){
+      var sec=(now/1000)%60,ang=sec*6;q('.hand').setAttribute('transform','rotate('+ang.toFixed(2)+')');
+      var w=q('.wedge');
+      if(rest){var a0=ang,a1=ang+ (remain/1000)*6;w.setAttribute('d',arc(a0,a1,98))}
+      else w.setAttribute('d','');
+    }
+  }
+  requestAnimationFrame(frame);
+}
+function arc(a0,a1,r){var p=function(a){var t=a*Math.PI/180;return [Math.sin(t)*r,-Math.cos(t)*r]};var s=p(a0),e=p(a1),big=(a1-a0)>180?1:0;return 'M0 0 L'+s[0].toFixed(1)+' '+s[1].toFixed(1)+' A'+r+' '+r+' 0 '+big+' 1 '+e[0].toFixed(1)+' '+e[1].toFixed(1)+' Z'}
+
+function show(i){
+  cur=i;
+  Array.prototype.forEach.call(tabsEl.children,function(b,k){b.setAttribute('aria-selected',k===i?'true':'false')});
+  if(!inst[i])inst[i]=build(OPTS[i]);
+  phoneEl.innerHTML='';phoneEl.appendChild(inst[i].el);
+  var n=OPTS[i].notes;
+  notesEl.innerHTML='<h2>'+n.h+'</h2><p>'+n.p+'</p><ul>'+n.pts.map(function(p){return '<li><b>'+p[0]+'</b>'+p[1]+'</li>'}).join('')+'</ul><div class="try"><b>Probalo:</b> '+n.try+'</div>';
+  try{history.replaceState(null,'','#'+OPTS[i].name.toLowerCase())}catch(e){}
+}
+OPTS.forEach(function(o,i){var b=document.createElement('button');b.type='button';b.setAttribute('role','tab');b.innerHTML='<b>'+o.key+' · '+o.name+'</b><small>'+o.tag+'</small>';b.onclick=function(){show(i)};tabsEl.appendChild(b)});
+var h=(location.hash||'').slice(1),start=OPTS.findIndex(function(o){return o.name.toLowerCase()===h});
+show(start>=0?start:0);requestAnimationFrame(frame);
+</script>
+</body>
+</html>

@@ -3,7 +3,7 @@
 // Pura y determinista: misma configuración + misma semilla = misma rutina.
 
 import { BLOCK_ORDER, itemName } from '../library.js';
-import { normalizeConfig, GOALS } from './config.js';
+import { normalizeConfig, GOALS, cycleOf } from './config.js';
 import { buildCandidates, categoryWeight } from './candidates.js';
 import { diagnose } from './diagnose.js';
 import { reachable } from './reach.js';
@@ -32,7 +32,7 @@ function restFor(config, variant, rpe, rpeLo, rpeHi) {
  */
 function fillBlock(o) {
   const { blockId, target, config, rng, used, usedEx, blockSeed } = o;
-  const pool = config.pool;
+  const pool = cycleOf(config.pool); // unidad de cálculo: ida y vuelta
   const units = Math.round(target / pool);
   if (!units) return [];
   const list = o.cands.filter((c) => c.blocks.includes(blockId));
