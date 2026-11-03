@@ -1,6 +1,6 @@
 // SWIM OS service worker: guarda la app completa para usarla sin conexión.
 // Generado por scripts/gen-sw.mjs. Al publicar cambios, subí la versión para que los móviles se actualicen.
-const CACHE = 'swim-os-v4';
+const CACHE = 'swim-os-v2.2';
 const ASSETS = [
   './',
   './fonts/barlow-condensed-latin-500-normal.woff2',
@@ -42,8 +42,11 @@ const ASSETS = [
   './src/ui/quick.js',
   './src/ui/settings.js',
   './src/ui/training.js',
+  './src/ui/updater.js',
   './src/ui/wizard.js',
   './src/ui/workout.js',
+  './src/update.js',
+  './src/version.js',
   './styles.css',
   './vendor/htm.umd.js',
   './vendor/react-dom.production.min.js',

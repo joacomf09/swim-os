@@ -1,5 +1,5 @@
 // Regenera sw.js con la lista real de archivos y una versión de caché nueva.
-// Uso: node scripts/gen-sw.mjs [versión]   (sin argumento conserva la actual)
+// Uso: node scripts/gen-sw.mjs   (la versión sale de src/version.js; también escribe version.json)
 import { readdirSync, readFileSync, writeFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 const root = new URL('..', import.meta.url).pathname;
@@ -9,8 +9,8 @@ const files = ['fonts', 'icons', 'vendor', 'src'].flatMap((d) => walk(join(root,
 const assets = [...files, './index.html', './styles.css', './manifest.webmanifest', './'].sort();
 const swPath = join(root, 'sw.js');
 const old = readFileSync(swPath, 'utf8');
-const m = old.match(/const CACHE = 'swim-os-v(\d+)'/);
-const ver = process.argv[2] || (m ? m[1] : '2');
+const ver = readFileSync(join(root, 'src/version.js'), 'utf8').match(/VERSION = '([\d.]+)'/)[1];
+writeFileSync(join(root, 'version.json'), JSON.stringify({ version: ver }) + '\n');
 const body = old.slice(old.indexOf('self.addEventListener'));
 writeFileSync(swPath, `// SWIM OS service worker: guarda la app completa para usarla sin conexión.
 // Generado por scripts/gen-sw.mjs. Al publicar cambios, subí la versión para que los móviles se actualicen.

@@ -6,6 +6,8 @@ import { Training, Summary } from './ui/training.js';
 import { LibraryView } from './ui/library-view.js';
 import { HistoryView } from './ui/history-view.js';
 import { Settings } from './ui/settings.js';
+import { VERSION } from './version.js';
+import { useUpdateCheck, takeUpdateResult, UpdateOverlay, UpdateDone, UpdateBanner } from './ui/updater.js';
 import { QuickSheet, SaveSheet } from './ui/quick.js';
 import { InstallPrompt, shouldShowInstall, markInstallSeen, isIos } from './ui/install.js';
 import { generateAlternative, regenerateBlock, startCheck, newSeed, validateWorkout, plannedMeters, conformToCycle, quickWorkout, snapTotal } from './engine/index.js';
@@ -13,7 +15,6 @@ import * as S from './engine/session.js';
 import * as H from './engine/history.js';
 import { defaultWorkout } from './legacy.js';
 
-const VERSION = '2.1';
 const conform = (x) => (x && x.items ? conformToCycle(x).workout : x);
 const store = H.createStore();
 
@@ -42,6 +43,9 @@ export function App() {
   const [summary, setSummary] = useState(null);
   const [warn, setWarn] = useState(null);
   const [dataMsg, setDataMsg] = useState(null);
+  const upd = useUpdateCheck();
+  const [updating, setUpdating] = useState(false);
+  const [updDone, setUpdDone] = useState(() => takeUpdateResult());
   const [quick, setQuick] = useState(false);
   const [saving, setSaving] = useState(false);
   const [install, setInstall] = useState(() => (shouldShowInstall() ? 'first' : null));
@@ -163,6 +167,7 @@ export function App() {
     ${tab === 'hoy' && html`<div className="page">
       <div className="top"><div className="mark"><${Logo}/>SWIM<i>OS</i></div><span className="date">${dateLong(Date.now())}</span></div>
       ${session && !training && html`<div className="note ok"><b>Tenés un entrenamiento en curso.</b><div className="fixes"><button type="button" className="btn small primary" onClick=${() => setTraining(true)}>Continuar</button><button type="button" className="btn small danger" onClick=${() => setSession(null)}>Descartar</button></div></div>`}
+      ${upd.remote && html`<${UpdateBanner} from=${VERSION} to=${upd.remote} onUpdate=${() => setUpdating(true)}/>`}
       <button type="button" className="create" onClick=${() => openWizard()}><${Icon} n="plus"/>CREAR NUEVO ENTRENAMIENTO</button>
       <div className="quick-row">
         <button type="button" className="btn" onClick=${() => setQuick(true)}><${Icon} n="dice"/>Aleatorio</button>
@@ -184,7 +189,7 @@ export function App() {
       <${Editor} w=${w} setW=${edit} onRegenBlock=${regen} onAlternative=${alternative} history=${history} sessionActive=${sessionActive}/></div>`}
     ${tab === 'lib' && html`<div className="page"><${LibraryView} prefs=${prefs} setPrefs=${savePrefs}/></div>`}
     ${tab === 'hist' && html`<div className="page"><${HistoryView} history=${history} onRepeat=${repeat} onBase=${asBase} onDelete=${delEntry}/></div>`}
-    ${tab === 'ajustes' && html`<div className="page"><${Settings} prefs=${prefs} setPrefs=${savePrefs} onExport=${exportData} onImport=${importData} onReset=${resetAll} onInstall=${() => setInstall('help')} msg=${dataMsg} version=${VERSION}/></div>`}
+    ${tab === 'ajustes' && html`<div className="page"><${Settings} prefs=${prefs} setPrefs=${savePrefs} onExport=${exportData} onImport=${importData} onReset=${resetAll} onInstall=${() => setInstall('help')} msg=${dataMsg} version=${VERSION} upd=${upd} onUpdate=${() => setUpdating(true)}/></div>`}
 
     ${(tab === 'hoy' || tab === 'rutina') && !session && html`<div className="cta-wrap"><button type="button" className="cta" onClick=${() => begin(false)}><${Icon} n="play"/>INICIAR ENTRENAMIENTO</button></div>`}
     ${(tab === 'hoy' || tab === 'rutina') && session && !training && html`<div className="cta-wrap"><button type="button" className="cta" onClick=${() => setTraining(true)}><${Icon} n="play"/>CONTINUAR ENTRENAMIENTO</button></div>`}
@@ -198,6 +203,8 @@ export function App() {
     ${warn && html`<${Sheet} title="La rutina no está completa" onClose=${() => setWarn(null)}>
       <p>${warn.errors.length ? warn.errors.map((e) => e.message).join(' ') : 'Hay diferencias con lo planificado.'}</p>
       <div className="tools"><button type="button" className="btn primary" onClick=${() => { setWarn(null); setTab('rutina'); }}>Corregir</button><button type="button" className="btn" onClick=${() => begin(true)}>Empezar igual</button><button type="button" className="btn" onClick=${() => setWarn(null)}>Cancelar</button></div><//>`}
+    ${updating && upd.remote && html`<${UpdateOverlay} from=${VERSION} to=${upd.remote}/>`}
+    ${updDone && html`<${UpdateDone} ...${updDone} onClose=${() => setUpdDone(null)}/>`}
     ${quick && html`<${QuickSheet} initial=${{ equipment: w.config.equipment, intensity: w.config.intensity, total: snapTotal(w.target, w.pool), pool: w.pool }} onClose=${() => setQuick(false)} onGenerate=${runQuick}/>`}
     ${saving && html`<${SaveSheet} initialName=${w.name} onSave=${saveNamed} onClose=${() => setSaving(false)}/>`}
     ${install && html`<${InstallPrompt} firstTime=${install === 'first'} onDone=${() => { markInstallSeen(); setInstall(null); }} onLater=${() => setInstall(null)}/>`}

@@ -23,5 +23,8 @@ for (const d of ['src', 'fonts', 'icons', 'vendor']) for (const p of walk(join(r
   if (!rel.endsWith('.d.ts') && !listed.has(rel)) fail('el service worker no cachea ' + rel + ' (ejecutá: npm run sw)');
 }
 for (const need of ['./index.html', './styles.css', './manifest.webmanifest']) if (!listed.has(need)) fail('el service worker no cachea ' + need);
+const verSrc = readFileSync(join(root, 'src/version.js'), 'utf8').match(/VERSION = '([\d.]+)'/)[1];
+if (JSON.parse(readFileSync(join(root, 'version.json'), 'utf8')).version !== verSrc) fail('version.json no coincide con src/version.js (ejecutá: npm run sw)');
+if (!sw.includes(`'swim-os-v${verSrc}'`)) fail('sw.js no usa la versión actual (ejecutá: npm run sw)');
 if (bad) { console.error(`\n${bad} problema(s)`); process.exit(1); }
 console.log('✓ sintaxis, referencias y caché sin conexión correctos');
