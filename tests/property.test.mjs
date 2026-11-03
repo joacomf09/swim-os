@@ -33,7 +33,7 @@ test('propiedad: 400 configuraciones aleatorias → nunca error, siempre suma ex
     assert.deepEqual(v.errors, [], `cfg ${JSON.stringify(config)}`);
     assert.equal(plannedMeters(w.items), config.total);
     for (const it of w.items) {
-      assert.equal(it.dist % (pool * (BY_ID[it.exId].unitMult || 1)), 0);
+      assert.equal(it.dist % Math.max(pool * 2, pool * (BY_ID[it.exId].unitMult || 1)), 0);
       assert.ok(it.reps >= 1 && it.rest >= 0 && it.rpe >= 1 && it.rpe <= 10);
     }
   }

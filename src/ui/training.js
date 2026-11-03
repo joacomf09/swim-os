@@ -17,11 +17,35 @@ function useWakeLock(on) {
   }, [on]);
 }
 
-function Ring({ frac, children, go }) {
+/**
+ * Anillo de descanso fluido: se redibuja en cada fotograma (requestAnimationFrame)
+ * a partir de marcas de tiempo reales, sin depender del reloj de 200 ms de la pantalla.
+ */
+function Ring({ phaseStart, restMs, pausedAt, children, go }) {
   const R = 92, C = 2 * Math.PI * R;
+  const arc = useRef(null);
+  const frac = () => {
+    if (!restMs) return 0;
+    const t = pausedAt != null ? pausedAt : Date.now();
+    return Math.min(1, Math.max(0, 1 - (t - phaseStart) / restMs));
+  };
+  useEffect(() => {
+    let raf = 0;
+    const draw = () => {
+      const f = frac();
+      if (arc.current) {
+        arc.current.style.strokeDashoffset = String(C * (1 - f));
+        arc.current.style.opacity = f <= 0.002 ? '0' : '1';
+      }
+      if (pausedAt == null && f > 0) raf = requestAnimationFrame(draw);
+    };
+    draw();
+    return () => cancelAnimationFrame(raf);
+  }, [phaseStart, restMs, pausedAt]);
+  const f0 = frac();
   return html`<div className=${'ring' + (go ? ' go' : '')}><svg viewBox="0 0 210 210" aria-hidden="true">
     <circle cx="105" cy="105" r=${R} fill="none" stroke="var(--surface-2)" strokeWidth="12"/>
-    <circle cx="105" cy="105" r=${R} fill="none" stroke=${go ? 'var(--aqua)' : 'var(--electric)'} strokeWidth="12" strokeLinecap="round" strokeDasharray=${C} strokeDashoffset=${C * (1 - Math.min(1, Math.max(0, frac)))}/></svg>
+    <circle ref=${arc} cx="105" cy="105" r=${R} fill="none" stroke=${go ? 'var(--aqua)' : 'var(--electric)'} strokeWidth="12" strokeLinecap="round" strokeDasharray=${C} style=${{ strokeDashoffset: C * (1 - f0), willChange: 'stroke-dashoffset' }}/></svg>
     <div className="c">${children}</div></div>`;
 }
 
@@ -79,14 +103,14 @@ export function Training({ session, setSession, pool, onExit }) {
         <span className="eyebrow">${BLOCKS[step.block].name} · repetición ${step.rep} de ${step.reps}</span>
         <div className="ex-name">${step.name}</div>
         <div className="facts">
-          <div><b className="num">${step.dist} m</b><span>${laps(step.dist, pool)} ${lapWord(step.dist, pool)}</span></div>
+          <div><b className="num">${step.dist} m</b><span>${step.dist / (2 * pool)} ${step.dist / (2 * pool) === 1 ? 'ida y vuelta' : 'idas y vueltas'}</span></div>
           <div><b className="num">${step.rep}/${step.reps}</b><span>repetición</span></div>
           <div><b className="num">${intensityText(step)}</b><span>${RPE_LABEL[step.rpe]}</span></div>
           <div><b className="num">${step.rest}s</b><span>descanso</span></div>
         </div>
         <div className=${'timer' + (paused ? ' paused' : '')}>
           ${s.phase === 'rest'
-            ? html`<${Ring} frac=${step.rest ? Math.max(0, remain) / (step.rest * 1000) : 0} go=${remain <= 0}>
+            ? html`<${Ring} phaseStart=${s.phaseStart} restMs=${step.rest * 1000} pausedAt=${s.pausedAt} go=${remain <= 0}>
                 <b className="num">${remain > 0 ? Math.ceil(remain / 1000) : '¡YA!'}</b><span>${remain > 0 ? 'descanso' : 'a nadar'}</span><//>`
             : html`<div className="t num">${clockMs(el)}<small>.${tenth(el)}</small></div><div className="l">${paused ? 'En pausa' : s.phase === 'swim' ? 'Tiempo de esta serie' : 'Listo para salir'}</div>`}
         </div>
@@ -124,6 +148,7 @@ export function Summary({ summary, entry, onClose, onRepeat, onDelete }) {
       <div className="kpi"><b className="num">${s.reps}/${s.plannedReps}</b><span>series hechas${s.skipped ? ` · ${s.skipped} saltadas` : ''}</span></div>
     </div>
     ${!s.pace100 && html`<p className="muted small">El ritmo aparece cuando hay al menos 10 s de nado registrado. No se muestran pulsaciones ni calorías porque la app no las mide.</p>`}
+    ${s.autoClosed && html`<div className="note bad"><${Icon} n="timer"/><span>El entrenamiento se cerró solo: llevaba más de 2 horas abierto. Se guardó hasta ese punto y las series que quedaron corriendo no cuentan.</span></div>`}
     <p className="msg">✓ Guardado en tu historial</p>
     <div className="tools"><button type="button" className="btn big primary" onClick=${onClose}>LISTO</button>
       <button type="button" className="btn" onClick=${onRepeat}><${Icon} n="hist"/>Repetir este entrenamiento</button>

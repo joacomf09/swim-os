@@ -37,6 +37,11 @@ export const DISTRIBUTIONS = {
 
 export const QUICK_DISTANCES = [500, 750, 1000, 1250, 1500, 1750, 2000, 2500, 3000];
 export const POOL_MIN = 10;
+
+/** El celular queda fijo en la pared de salida: cada serie termina donde empezó (ida y vuelta = 2 largos). */
+export const cycleOf = (pool) => pool * 2;
+/** Múltiplo mínimo de distancia de una serie de ese ejercicio (IM: 4 largos). */
+export const unitOf = (ex, pool) => Math.max(pool * 2, pool * ((ex && ex.unitMult) || 1));
 export const POOL_MAX = 100;
 
 /** Volumen a partir del cual se avisa según el nivel. */
@@ -111,8 +116,8 @@ export function normalizeConfig(input) {
   if (!GOALS[c.goal]) c.goal = 'balanced';
   if (!INTENSITIES[c.intensity]) c.intensity = 'moderate';
   if (!REST_MODES[c.restMode]) c.restMode = 'normal';
-  if (c.distribution !== 'custom' && DISTRIBUTIONS[c.distribution] && Number.isInteger(c.total / c.pool) && c.pool > 0) {
-    c.blocks = splitBlocks(c.total, c.pool, DISTRIBUTIONS[c.distribution].pct);
+  if (c.distribution !== 'custom' && DISTRIBUTIONS[c.distribution] && c.pool > 0 && Number.isInteger(c.total / cycleOf(c.pool))) {
+    c.blocks = splitBlocks(c.total, cycleOf(c.pool), DISTRIBUTIONS[c.distribution].pct);
   } else {
     if (c.distribution !== 'custom' && !DISTRIBUTIONS[c.distribution]) c.distribution = 'custom';
     const b = c.blocks || d.blocks;

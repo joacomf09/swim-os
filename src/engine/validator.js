@@ -3,7 +3,7 @@
 // Errores = la rutina es incorrecta. Avisos = técnicamente posible pero poco recomendable.
 
 import { BLOCK_ORDER, BY_ID, LEVELS, EQUIPMENT, resolveItem } from '../library.js';
-import { resolveSelection, VOLUME_WARN } from './config.js';
+import { resolveSelection, VOLUME_WARN, unitOf } from './config.js';
 
 const fmt = (n) => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 export const meters = (it) => it.reps * it.dist;
@@ -52,9 +52,9 @@ export function validateWorkout(workout, opts = {}) {
       continue;
     }
     if (it.rest < 0) E('REST_NEGATIVE', `«${label}»: el descanso no puede ser negativo.`, it.id);
-    const unit = pool * ((ex && ex.unitMult) || 1);
+    const unit = unitOf(ex, pool);
     if (it.dist % unit !== 0) {
-      E('POOL_MULTIPLE', `«${label}»: ${it.dist} m no es múltiplo de ${unit} m (${ex && ex.unitMult > 1 ? 'cuatro largos de ' : 'la piscina de '}${pool} m).`, it.id);
+      E('POOL_MULTIPLE', `«${label}»: ${it.dist} m no es múltiplo de ${unit} m. El celular queda en la pared de salida, así que cada serie debe terminar donde empezó.`, it.id);
     }
     if (!ex) {
       Wn('UNKNOWN_EXERCISE', `«${label}»: no está en la biblioteca.`, it.id);
