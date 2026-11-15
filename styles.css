@@ -427,3 +427,30 @@ select{min-height:38px;padding:0 10px;border-radius:999px;border:1px solid var(-
 .upd-done h2{margin:0;font-family:var(--f-display);font-size:30px}
 .upd-done .badge{width:72px;height:72px;border-radius:50%;background:var(--aqua);color:#031027;font-size:40px;font-weight:800;display:flex;align-items:center;justify-content:center}
 .upd-done .badge.bad{background:var(--warn)}
+
+/* ───────── 2.3 · Entrenamiento: zona de control fija, sin tapar nada ───────── */
+.ov:has(.dock){overflow:hidden}
+.ov:has(.dock) .ov-in{height:100%;min-height:0;gap:10px;padding-bottom:0}
+.ov-mid{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;gap:10px;padding-bottom:12px}
+.ov:has(.dock) .prog .row b{font-size:22px}
+.ov:has(.dock) .bblocks{display:none}
+.active .body{padding:12px 14px;gap:6px}
+.ex-name{font-size:30px}
+.facts{grid-template-columns:repeat(3,minmax(0,1fr))}
+.timer{padding:2px 0}
+.timer .t{font-size:84px}
+.ring{width:176px;height:176px}
+.ring .c b{font-size:64px}
+.lane{max-height:120px}
+.dock{position:static;flex:none;margin:0 calc(-1 * max(16px,env(safe-area-inset-left,0px)));padding:12px max(16px,env(safe-area-inset-left,0px)) calc(12px + env(safe-area-inset-bottom,0px));background:var(--surface);border-top:1px solid var(--line);box-shadow:0 -12px 24px rgba(3,10,24,.55);gap:10px}
+.main-btn{width:100%;min-height:116px;border-radius:30px;flex-direction:row;gap:16px;font-size:30px;letter-spacing:.07em;box-shadow:none}
+.main-btn svg{width:44px;height:44px;flex:none}
+.main-btn.start{background:var(--aqua);color:#031027}
+.main-btn.finish{background:var(--ink);color:#031027}
+.main-btn.resume{background:var(--warn);color:#2A1A00}
+.main-btn:active{transform:scale(.98);filter:brightness(.92)}
+.dock .sec{gap:8px}
+.dock .sec button{min-height:50px;flex-direction:row;gap:8px;font-size:13px;letter-spacing:.02em;border-radius:14px}
+.dock .sec button svg{width:18px;height:18px}
+@media (max-height:700px){.timer .t{font-size:64px}.lane{max-height:90px}.main-btn{min-height:96px}}
+.ov-mid>*{flex:none}

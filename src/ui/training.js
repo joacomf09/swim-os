@@ -114,10 +114,10 @@ export function Training({ session, setSession, pool, onExit }) {
   let main;
   if (paused) main = html`<button type="button" className="main-btn resume" onClick=${act(S.resume)}><${Icon} n="play"/><span>REANUDAR</span></button>`;
   else if (s.phase === 'ready') main = html`<button type="button" className="main-btn start" onClick=${() => { beep(880, 100); start(); }}><${Icon} n="play"/><span>INICIAR</span></button>`;
-  else if (s.phase === 'swim') main = html`<button type="button" className="main-btn finish" onClick=${finish}><${Icon} n="check"/><span>FINALIZAR<br/>SERIE</span></button>`;
+  else if (s.phase === 'swim') main = html`<button type="button" className="main-btn finish" onClick=${finish}><${Icon} n="check"/><span>FINALIZAR SERIE</span></button>`;
   else main = remain <= 0
     ? html`<button type="button" className="main-btn start" onClick=${() => setSession((cur) => S.start(S.skipRest(cur, Date.now()), Date.now()))}><${Icon} n="play"/><span>INICIAR</span></button>`
-    : html`<button type="button" className="main-btn finish" onClick=${act(S.skipRest)}><${Icon} n="next"/><span>SALTAR<br/>DESCANSO</span></button>`;
+    : html`<button type="button" className="main-btn finish" onClick=${act(S.skipRest)}><${Icon} n="next"/><span>SALTAR DESCANSO</span></button>`;
 
   const lastStep = s.idx >= s.steps.length - 1;
   return html`<div className="ov" role="dialog" aria-modal="true" aria-label="Entrenamiento en curso"><div className="ov-in">
@@ -130,39 +130,40 @@ export function Training({ session, setSession, pool, onExit }) {
       <div className="bar" role="progressbar" aria-valuenow=${Math.round(prog.pct * 100)} aria-valuemin="0" aria-valuemax="100"><span style=${{ width: prog.pct * 100 + '%' }}></span></div>
       <div className="bblocks">${BLOCK_ORDER.filter((b) => prog.blocks[b].total > 0).map((b) => html`<div key=${b} className=${step && step.block === b ? 'cur' : ''}><span>${BLOCKS[b].name}</span><div className="bar thin"><span style=${{ width: prog.blocks[b].pct * 100 + '%', background: BLOCKS[b].color }}></span></div></div>`)}</div>
     </div>
+    <div className="ov-mid">
     ${step && html`<section className="active">
       <div className="body">
         <span className="eyebrow">${BLOCKS[step.block].name} · repetición ${step.rep} de ${step.reps}</span>
         <div className="ex-name">${step.name}</div>
         <div className="facts">
           <div><b className="num">${step.dist} m</b><span>${step.dist / (2 * pool)} ${step.dist / (2 * pool) === 1 ? 'ida y vuelta' : 'idas y vueltas'}</span></div>
-          <div><b className="num">${step.rep}/${step.reps}</b><span>repetición</span></div>
           <div><b className="num">${intensityText(step)}</b><span>${RPE_LABEL[step.rpe]}</span></div>
           <div><b className="num">${step.rest}s</b><span>descanso</span></div>
         </div>
-        <${Lane} phase=${s.phase === 'swim' ? 'swim' : 'wall'} getElapsed=${getElapsed} cycleMs=${2 * pool * 1200} paused=${paused}/>
         <div className=${'timer' + (paused ? ' paused' : '')}>
           ${s.phase === 'rest'
             ? html`<${Ring} phaseStart=${s.phaseStart} restMs=${step.rest * 1000} pausedAt=${s.pausedAt} go=${remain <= 0}>
                 <b className="num">${remain > 0 ? Math.ceil(remain / 1000) : '¡YA!'}</b><span>${remain > 0 ? 'descanso' : 'a nadar'}</span><//>`
             : html`<div className="t num">${clockMs(el)}<small>.${tenth(el)}</small></div><div className="l">${paused ? 'En pausa' : s.phase === 'swim' ? 'Tiempo de esta serie' : 'Listo para salir'}</div>`}
         </div>
+        <${Lane} phase=${s.phase === 'swim' ? 'swim' : 'wall'} getElapsed=${getElapsed} cycleMs=${2 * pool * 1200} paused=${paused}/>
         ${step.note && html`<p className="muted small">${step.note}</p>`}
         ${ex && ex.safety && html`<div className="safety"><${Icon} n="shield"/><span>${ex.safety}</span></div>`}
       </div>
     </section>`}
-    <div className="dock">
-      ${main}
-      <div className="sec">
-        <button type="button" onClick=${act(S.prev)} disabled=${paused || (s.idx === 0 && s.phase === 'ready')}><${Icon} n="prev"/>ANTERIOR</button>
-        ${paused ? html`<button type="button" disabled><${Icon} n="pause"/>EN PAUSA</button>` : html`<button type="button" onClick=${act(S.pause)} disabled=${s.phase === 'ready'}><${Icon} n="pause"/>PAUSAR</button>`}
-        <button type="button" onClick=${act(S.next)} disabled=${paused}><${Icon} n="next"/>${lastStep ? 'TERMINAR' : 'SIGUIENTE'}</button>
-      </div>
-    </div>
     ${nxt && html`<div className="nextc"><span className="eyebrow">Después</span><div className="row"><b>${nxt.name}</b><span className="num">${nxt.dist} m · ${intensityText(nxt)}</span></div></div>`}
     ${ex && html`<details className="more"><summary>Cómo se hace<${Icon} n="down"/></summary><div className="in">
       <ul>${ex.instructions.map((t, i) => html`<li key=${i}>${t}</li>`)}</ul>
       ${ex.mistakes.length > 0 && html`<div><b>Errores comunes</b><ul>${ex.mistakes.map((t, i) => html`<li key=${i}>${t}</li>`)}</ul></div>`}</div></details>`}
+    </div>
+    <div className="dock">
+      ${main}
+      <div className="sec">
+        <button type="button" onClick=${act(S.prev)} disabled=${paused || (s.idx === 0 && s.phase === 'ready')}><${Icon} n="prev"/>Anterior</button>
+        ${paused ? html`<button type="button" disabled><${Icon} n="pause"/>En pausa</button>` : html`<button type="button" onClick=${act(S.pause)} disabled=${s.phase === 'ready'}><${Icon} n="pause"/>Pausar</button>`}
+        <button type="button" onClick=${act(S.next)} disabled=${paused}><${Icon} n="next"/>${lastStep ? 'Terminar' : 'Siguiente'}</button>
+      </div>
+    </div>
     ${sure && html`<div className="confirm"><span>¿Terminar el entrenamiento?</span><div>
       <button type="button" className="btn" onClick=${() => setSure(false)}>Seguir</button>
       <button type="button" className="btn primary" onClick=${() => { setSure(false); setSession((cur) => S.finishSession(cur, Date.now())); }}>Terminar y guardar</button>
