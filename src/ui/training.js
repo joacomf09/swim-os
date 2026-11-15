@@ -21,7 +21,7 @@ function useWakeLock(on) {
  * Anillo de descanso fluido: se redibuja en cada fotograma (requestAnimationFrame)
  * a partir de marcas de tiempo reales, sin depender del reloj de 200 ms de la pantalla.
  */
-function Ring({ phaseStart, restMs, pausedAt, children, go }) {
+function Ring({ phaseStart, restMs, pausedAt, children, go, small }) {
   const R = 92, C = 2 * Math.PI * R;
   const arc = useRef(null);
   const frac = () => {
@@ -43,7 +43,7 @@ function Ring({ phaseStart, restMs, pausedAt, children, go }) {
     return () => cancelAnimationFrame(raf);
   }, [phaseStart, restMs, pausedAt]);
   const f0 = frac();
-  return html`<div className=${'ring' + (go ? ' go' : '')}><svg viewBox="0 0 210 210" aria-hidden="true">
+  return html`<div className=${'ring' + (go ? ' go' : '') + (small ? ' sm' : '')}><svg viewBox="0 0 210 210" aria-hidden="true">
     <circle cx="105" cy="105" r=${R} fill="none" stroke="var(--surface-2)" strokeWidth="12"/>
     <circle ref=${arc} cx="105" cy="105" r=${R} fill="none" stroke=${go ? 'var(--aqua)' : 'var(--electric)'} strokeWidth="12" strokeLinecap="round" strokeDasharray=${C} style=${{ strokeDashoffset: C * (1 - f0), willChange: 'stroke-dashoffset' }}/></svg>
     <div className="c">${children}</div></div>`;
@@ -81,14 +81,17 @@ function Lane({ phase, getElapsed, cycleMs, paused }) {
 }
 
 /** "Siguiente": qué viene después, en al menos dos líneas (tipo de ejercicio + de qué trata). */
-function NextUp({ cur, nxt, pool }) {
-  if (!nxt) return html`<div className="nextup last"><span className="eyebrow">Siguiente</span><b>Es la última serie</b><span className="nl">Al terminarla, el entrenamiento queda guardado en tu historial.</span></div>`;
+function NextUp({ cur, nxt, pool, rest }) {
+  const head = rest && html`<div className="nu-rest"><${Ring} small=${true} phaseStart=${rest.phaseStart} restMs=${rest.ms} pausedAt=${rest.pausedAt} go=${rest.remain <= 0}><b className="num">${rest.remain > 0 ? Math.ceil(rest.remain / 1000) : '¡YA!'}</b><//>
+    <div><span className="eyebrow">${rest.remain > 0 ? 'Descanso restante' : 'Descanso terminado'}</span><b>${rest.remain > 0 ? 'de ' + Math.round(rest.ms / 1000) + ' s' : 'A nadar'}</b></div></div>`;
+  if (!nxt) return html`<div className=${'nextup last' + (rest ? ' withrest' : '')}>${head}<span className="eyebrow">Siguiente</span><b>Es la última serie</b><span className="nl">Al terminarla, el entrenamiento queda guardado en tu historial.</span></div>`;
   const nex = exerciseById(nxt.exId);
   const same = cur && cur.exId === nxt.exId && cur.variantId === nxt.variantId && cur.block === nxt.block;
   const cat = nex && CATEGORIES.find((c) => c.id === nex.category);
   const lapsN = nxt.dist / (2 * pool);
   const meta = [cat && cat.short, nex && STROKES[nex.stroke], nxt.dist + ' m (' + lapsN + (lapsN === 1 ? ' ida y vuelta' : ' idas y vueltas') + ')', intensityText(nxt)].filter(Boolean).join(' · ');
-  return html`<div className="nextup">
+  return html`<div className=${'nextup' + (rest ? ' withrest' : '')}>
+    ${head}
     <span className="eyebrow">Siguiente · ${same ? `repetición ${nxt.rep} de ${nxt.reps}` : BLOCKS[nxt.block].name}</span>
     <b>${nxt.name}</b>
     <span className="nl">${meta}</span>
@@ -156,13 +159,10 @@ export function Training({ session, setSession, pool, onExit }) {
           <div><b className="num">${intensityText(step)}</b><span>${RPE_LABEL[step.rpe]}</span></div>
           <div><b className="num">${step.rest}s</b><span>descanso</span></div>
         </div>
-        <div className=${'timer' + (paused ? ' paused' : '')}>
-          ${s.phase === 'rest'
-            ? html`<${Ring} phaseStart=${s.phaseStart} restMs=${step.rest * 1000} pausedAt=${s.pausedAt} go=${remain <= 0}>
-                <b className="num">${remain > 0 ? Math.ceil(remain / 1000) : '¡YA!'}</b><span>${remain > 0 ? 'descanso' : 'a nadar'}</span><//>`
-            : html`<div className="t num">${clockMs(el)}<small>.${tenth(el)}</small></div><div className="l">${paused ? 'En pausa' : s.phase === 'swim' ? 'Tiempo de esta serie' : 'Listo para salir'}</div>`}
-        </div>
-        <${NextUp} cur=${step} nxt=${nxt} pool=${pool}/>
+        ${s.phase !== 'rest' && html`<div className=${'timer' + (paused ? ' paused' : '')}>
+          <div className="t num">${clockMs(el)}<small>.${tenth(el)}</small></div><div className="l">${paused ? 'En pausa' : s.phase === 'swim' ? 'Tiempo de esta serie' : 'Listo para salir'}</div>
+        </div>`}
+        <${NextUp} cur=${step} nxt=${nxt} pool=${pool} rest=${s.phase === 'rest' ? { phaseStart: s.phaseStart, ms: step.rest * 1000, pausedAt: s.pausedAt, remain } : null}/>
         ${s.phase !== 'rest' && html`<${Lane} phase=${s.phase === 'swim' ? 'swim' : 'wall'} getElapsed=${getElapsed} cycleMs=${2 * pool * 1200} paused=${paused}/>`}
         ${step.note && html`<p className="muted small">${step.note}</p>`}
         ${ex && ex.safety && html`<div className="safety"><${Icon} n="shield"/><span>${ex.safety}</span></div>`}
@@ -179,8 +179,9 @@ export function Training({ session, setSession, pool, onExit }) {
         ${paused ? html`<button type="button" disabled><${Icon} n="pause"/>En pausa</button>` : html`<button type="button" onClick=${act(S.pause)} disabled=${s.phase === 'ready'}><${Icon} n="pause"/>Pausar</button>`}
         <button type="button" onClick=${act(S.next)} disabled=${paused}><${Icon} n="next"/>${lastStep ? 'Terminar' : 'Siguiente'}</button>
       </div>
+      <button type="button" className="endbtn" onClick=${() => setSure(true)}>Terminar entrenamiento</button>
     </div>
-    ${sure && html`<div className="confirm"><span>¿Terminar el entrenamiento?</span><div>
+    ${sure && html`<div className="confirm"><span>¿Terminar el entrenamiento?<small>Se guarda lo que ya nadaste.</small></span><div>
       <button type="button" className="btn" onClick=${() => setSure(false)}>Seguir</button>
       <button type="button" className="btn primary" onClick=${() => { setSure(false); setSession((cur) => S.finishSession(cur, Date.now())); }}>Terminar y guardar</button>
       <button type="button" className="btn danger" onClick=${onExit}>Descartar</button></div></div>`}
