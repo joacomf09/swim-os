@@ -454,3 +454,10 @@ select{min-height:38px;padding:0 10px;border-radius:999px;border:1px solid var(-
 .dock .sec button svg{width:18px;height:18px}
 @media (max-height:700px){.timer .t{font-size:64px}.lane{max-height:90px}.main-btn{min-height:96px}}
 .ov-mid>*{flex:none}
+
+/* Siguiente */
+.nextup{display:flex;flex-direction:column;gap:3px;padding:12px 14px;border-radius:var(--r-md);background:var(--surface-2);border-left:4px solid var(--aqua)}
+.nextup b{font-family:var(--f-display);font-weight:800;font-size:22px;line-height:1.1}
+.nextup .nl{font-size:13px;color:var(--muted)}
+.nextup .nl.d{color:var(--ink);opacity:.85;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.nextup.last{border-left-color:var(--warn)}

@@ -2,7 +2,7 @@
 // marcas de reloj reales (session.js), nunca de contadores que se pierdan al
 // bloquear la pantalla o cambiar de pestaña.
 import { html, useState, useEffect, useRef, Icon, Art, useNow, beep, buzz, fmtM, laps, lapWord, clock, clockMs, tenth, pace } from './kit.js';
-import { BLOCKS, BLOCK_ORDER, BY_ID, intensityText, RPE_LABEL, exerciseById } from '../library.js';
+import { BLOCKS, BLOCK_ORDER, BY_ID, CATEGORIES, STROKES, intensityText, RPE_LABEL, exerciseById } from '../library.js';
 import * as S from '../engine/session.js';
 
 function useWakeLock(on) {
@@ -80,6 +80,22 @@ function Lane({ phase, getElapsed, cycleMs, paused }) {
   </svg>`;
 }
 
+/** "Siguiente": qué viene después, en al menos dos líneas (tipo de ejercicio + de qué trata). */
+function NextUp({ cur, nxt, pool }) {
+  if (!nxt) return html`<div className="nextup last"><span className="eyebrow">Siguiente</span><b>Es la última serie</b><span className="nl">Al terminarla, el entrenamiento queda guardado en tu historial.</span></div>`;
+  const nex = exerciseById(nxt.exId);
+  const same = cur && cur.exId === nxt.exId && cur.variantId === nxt.variantId && cur.block === nxt.block;
+  const cat = nex && CATEGORIES.find((c) => c.id === nex.category);
+  const lapsN = nxt.dist / (2 * pool);
+  const meta = [cat && cat.short, nex && STROKES[nex.stroke], nxt.dist + ' m (' + lapsN + (lapsN === 1 ? ' ida y vuelta' : ' idas y vueltas') + ')', intensityText(nxt)].filter(Boolean).join(' · ');
+  return html`<div className="nextup">
+    <span className="eyebrow">Siguiente · ${same ? `repetición ${nxt.rep} de ${nxt.reps}` : BLOCKS[nxt.block].name}</span>
+    <b>${nxt.name}</b>
+    <span className="nl">${meta}</span>
+    ${nex && nex.desc && html`<span className="nl d">${nex.desc}</span>`}
+  </div>`;
+}
+
 export function Training({ session, setSession, pool, onExit }) {
   const s = session;
   const running = s.phase === 'swim' || s.phase === 'rest';
@@ -146,12 +162,12 @@ export function Training({ session, setSession, pool, onExit }) {
                 <b className="num">${remain > 0 ? Math.ceil(remain / 1000) : '¡YA!'}</b><span>${remain > 0 ? 'descanso' : 'a nadar'}</span><//>`
             : html`<div className="t num">${clockMs(el)}<small>.${tenth(el)}</small></div><div className="l">${paused ? 'En pausa' : s.phase === 'swim' ? 'Tiempo de esta serie' : 'Listo para salir'}</div>`}
         </div>
-        <${Lane} phase=${s.phase === 'swim' ? 'swim' : 'wall'} getElapsed=${getElapsed} cycleMs=${2 * pool * 1200} paused=${paused}/>
+        <${NextUp} cur=${step} nxt=${nxt} pool=${pool}/>
+        ${s.phase !== 'rest' && html`<${Lane} phase=${s.phase === 'swim' ? 'swim' : 'wall'} getElapsed=${getElapsed} cycleMs=${2 * pool * 1200} paused=${paused}/>`}
         ${step.note && html`<p className="muted small">${step.note}</p>`}
         ${ex && ex.safety && html`<div className="safety"><${Icon} n="shield"/><span>${ex.safety}</span></div>`}
       </div>
     </section>`}
-    ${nxt && html`<div className="nextc"><span className="eyebrow">Después</span><div className="row"><b>${nxt.name}</b><span className="num">${nxt.dist} m · ${intensityText(nxt)}</span></div></div>`}
     ${ex && html`<details className="more"><summary>Cómo se hace<${Icon} n="down"/></summary><div className="in">
       <ul>${ex.instructions.map((t, i) => html`<li key=${i}>${t}</li>`)}</ul>
       ${ex.mistakes.length > 0 && html`<div><b>Errores comunes</b><ul>${ex.mistakes.map((t, i) => html`<li key=${i}>${t}</li>`)}</ul></div>`}</div></details>`}
