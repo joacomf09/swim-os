@@ -1,7 +1,7 @@
 // Pantalla "Hoy" (resumen + acciones) y "Rutina" (editor manual).
-import { html, useState, useMemo, Icon, Art, Sheet, Stepper, Issues, fmtM, laps, lapWord, dateLong, clock } from './kit.js';
-import { BLOCKS, BLOCK_ORDER, BY_ID, EXERCISES, CATEGORIES, EQUIPMENT, variantsOf, intensityText, resolveItem, DIFFICULTY_LABEL } from '../library.js';
-import { plannedMeters, blockMeters, distanceStatus, validateWorkout, estimateItems, updateItem, swapExercise, removeItem, moveItem, moveToBlock, addItem, fitToTarget, acceptPlanned, startCheck, measuredPace, GOALS, INTENSITIES, unitOf } from '../engine/index.js';
+import { html, useState, useMemo, Icon, Art, Sheet, FinsTag, Stepper, Issues, fmtM, laps, lapWord, dateLong, clock } from './kit.js';
+import { BLOCKS, BLOCK_ORDER, BY_ID, EXERCISES, CATEGORIES, EQUIPMENT, variantsOf, intensityText, resolveItem, DIFFICULTY_LABEL, finsMode } from '../library.js';
+import { plannedMeters, blockMeters, distanceStatus, validateWorkout, estimateItems, updateItem, swapExercise, removeItem, moveItem, moveToBlock, addItem, fitToTarget, acceptPlanned, setFinsStart, startCheck, measuredPace, GOALS, INTENSITIES, unitOf } from '../engine/index.js';
 
 export function DistanceBadge({ w }) {
   const s = distanceStatus(w);
@@ -41,7 +41,7 @@ function ItemLine({ it, pool, onOpen }) {
   const { ex } = resolveItem(it);
   return html`<li><button type="button" className="line" onClick=${onOpen} disabled=${!onOpen}>
     <span className="thumb"><${Art} ex=${ex}/></span>
-    <span><span className="nm">${it.name}</span><span className="sub">${laps(it.dist, pool)} ${lapWord(it.dist, pool)} · ${intensityText(it)} · descanso ${it.rest}s</span></span>
+    <span><span className="nm">${it.name}<${FinsTag} it=${it}/></span><span className="sub">${laps(it.dist, pool)} ${lapWord(it.dist, pool)} · ${intensityText(it)} · descanso ${it.rest}s</span></span>
     <span className="qty num">${it.reps}×${it.dist}</span></button></li>`;
 }
 
@@ -75,7 +75,7 @@ export function ExercisePicker({ title, equipment, allowNoGear, onPick, onClose,
 }
 
 /* ───────── editor ───────── */
-function ItemEditor({ w, it, index, count, onChange, onSwap, onRemove, onMove, onBlock }) {
+function ItemEditor({ w, it, index, count, onChange, onSwap, onRemove, onMove, onBlock, onFins }) {
   const [open, setOpen] = useState(false);
   const { ex } = resolveItem(it);
   const unit = unitOf(ex, w.pool);
@@ -83,7 +83,7 @@ function ItemEditor({ w, it, index, count, onChange, onSwap, onRemove, onMove, o
   return html`<li className="ed">
     <button type="button" className="ed-h" aria-expanded=${open} onClick=${() => setOpen(!open)}>
       <span className="thumb"><${Art} ex=${ex}/></span>
-      <span><span className="nm">${it.name}</span><span className="sub">${intensityText(it)} · descanso ${it.rest}s · ${fmtM(m)} m</span></span>
+      <span><span className="nm">${it.name}<${FinsTag} it=${it}/></span><span className="sub">${intensityText(it)} · descanso ${it.rest}s · ${fmtM(m)} m</span></span>
       <span className="qty num">${it.reps}×${it.dist}</span></button>
     ${open && html`<div className="ed-b">
       <div className="grid2">
@@ -92,6 +92,11 @@ function ItemEditor({ w, it, index, count, onChange, onSwap, onRemove, onMove, o
         <div className="field"><label>Descanso</label><${Stepper} label="descanso" value=${it.rest} step=${5} min=${0} max=${300} unit="s" onChange=${(v) => onChange({ rest: v })}/></div>
         <div className="field"><label>Esfuerzo (1–10)</label><${Stepper} label="esfuerzo" value=${it.rpe} min=${1} max=${10} onChange=${(v) => onChange({ rpe: v })}/></div>
       </div>
+      ${it.fins !== undefined && html`<div className="field"><label>Aletas</label>
+        <div className="seg" role="group" aria-label="Aletas">
+          <button type="button" aria-pressed=${!it.fins} onClick=${() => onFins('off')}>Sin aletas</button>
+          <button type="button" aria-pressed=${it.fins} disabled=${finsMode(ex) === 'never'} onClick=${() => onFins('on')}>Con aletas desde acá</button></div>
+        <small className="hint">${finsMode(ex) === 'never' ? 'Este ejercicio no se hace con aletas: va antes de ponértelas.' : 'Una vez que te las ponés, las series siguientes siguen con aletas.'}</small></div>`}
       <div className="tools">
         <button type="button" className="btn small" onClick=${onSwap}><${Icon} n="swap"/>Cambiar ejercicio</button>
         <button type="button" className="btn small" onClick=${() => onMove(-1)} disabled=${index === 0} aria-label="Subir"><${Icon} n="up"/></button>
@@ -127,7 +132,8 @@ export function Editor({ w, setW, onRegenBlock, onAlternative, history, sessionA
       return html`<section key=${b}><div className="block-h"><h3><i style=${{ background: BLOCKS[b].color }}></i>${BLOCKS[b].name}</h3><span className="num">${fmtM(by[b])} m</span></div>
         <ul className="eds">${list.map((it, i) => html`<${ItemEditor} key=${it.id} w=${w} it=${it} index=${i} count=${list.length}
           onChange=${(p) => apply((x) => updateItem(x, it.id, p))} onSwap=${() => setPicker({ mode: 'swap', id: it.id, block: b })}
-          onRemove=${() => apply((x) => removeItem(x, it.id))} onMove=${(d) => apply((x) => moveItem(x, it.id, d))} onBlock=${(nb) => apply((x) => moveToBlock(x, it.id, nb))}/>`)}</ul>
+          onRemove=${() => apply((x) => removeItem(x, it.id))} onMove=${(d) => apply((x) => moveItem(x, it.id, d))} onBlock=${(nb) => apply((x) => moveToBlock(x, it.id, nb))}
+          onFins=${(mode) => apply((x) => { const gi = x.items.findIndex((q) => q.id === it.id); return setFinsStart(x, mode === 'on' ? gi : gi + 1 >= x.items.length ? -1 : gi + 1); })}/>`)}</ul>
         <div className="tools"><button type="button" className="btn small" onClick=${() => setPicker({ mode: 'add', block: b })}><${Icon} n="plus"/>Agregar ejercicio</button>
           ${by[b] > 0 && html`<button type="button" className="btn small" onClick=${() => w.edited ? setConfirm({ block: b, msg: `Vas a reemplazar el ${BLOCKS[b].name.toLowerCase()} (incluidos tus cambios en ese bloque). Los demás bloques no se tocan.`, action: () => onRegenBlock(b) }) : onRegenBlock(b)}><${Icon} n="dice"/>Regenerar bloque</button>`}</div></section>`;
     })}

@@ -542,6 +542,18 @@ export function equipmentLabel(ids) {
   return ids.map((i) => (EQUIPMENT[i] ? EQUIPMENT[i].short : i)).join(' + ');
 }
 
+/**
+ * Aletas: 'required' (solo se hace con aletas), 'optional' (se puede nadar con o sin aletas) o 'never'
+ * (no tiene sentido con aletas: braza, combinado, palas, pull buoy…).
+ */
+const NO_FINS = new Set(['arms-pull-free', 'arms-pull-back', 'arms-paddles', 'arms-pull-paddles', 'arms-catch']);
+export function finsMode(ex) {
+  if (!ex) return 'never';
+  if (ex.equipmentRequired.includes('fins')) return 'required';
+  if (NO_FINS.has(ex.id) || ['breast', 'im', 'mixed'].includes(ex.stroke)) return 'never';
+  return 'optional';
+}
+
 /** Nombre visible de una serie: "Crol suave", "Sprint de crol", "Pataleo con tabla (sin tabla)". */
 export function itemName(ex, variant, noGear) {
   let n;

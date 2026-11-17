@@ -2,6 +2,7 @@
 // GENERADOR: construye una rutina que suma exactamente la distancia pedida.
 // Pura y determinista: misma configuración + misma semilla = misma rutina.
 
+import { assignFins } from './fins.js';
 import { BLOCK_ORDER, itemName } from '../library.js';
 import { normalizeConfig, GOALS, cycleOf } from './config.js';
 import { buildCandidates, categoryWeight } from './candidates.js';
@@ -117,8 +118,11 @@ function distinctKeys(cb) {
   return s.size;
 }
 
-function makeWorkout(config, items, extra) {
+function makeWorkout(config, items0, extra) {
   const total = config.total;
+  const fa = assignFins(items0, config);
+  const items = fa.items;
+  if (fa.warning) extra = { ...extra, warnings: [...(extra.warnings || []), { code: 'FINS', message: fa.warning }] };
   return {
     v: 2,
     id: `w${config.seed.toString(36)}${Math.abs(hashSeed(JSON.stringify(items.map((i) => i.id)))).toString(36)}`,
@@ -209,7 +213,7 @@ export function regenerateBlock(workout, blockId, opts = {}) {
     const got = fillBlock({ blockId, target, config, cands, rng: mulberry32(blockSeed), used, usedEx, blockSeed });
     if (!got) continue;
     const items = BLOCK_ORDER.flatMap((b) => (b === blockId ? got : workout.items.filter((i) => i.block === b)));
-    const w = { ...workout, items };
+    const w = { ...workout, items: assignFins(items, config).items };
     const v = validateWorkout(w, { config, distinctKeys: dk });
     if (!v.ok) continue;
     const same = JSON.stringify(got.map((i) => [i.exId, i.variantId, i.reps, i.dist])) === JSON.stringify(workout.items.filter((i) => i.block === blockId).map((i) => [i.exId, i.variantId, i.reps, i.dist]));

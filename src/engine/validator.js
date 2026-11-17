@@ -2,7 +2,7 @@
 // WORKOUT VALIDATOR: comprueba una rutina (generada o editada a mano).
 // Errores = la rutina es incorrecta. Avisos = técnicamente posible pero poco recomendable.
 
-import { BLOCK_ORDER, BY_ID, LEVELS, EQUIPMENT, resolveItem } from '../library.js';
+import { BLOCK_ORDER, BY_ID, LEVELS, EQUIPMENT, resolveItem, finsMode } from '../library.js';
 import { resolveSelection, VOLUME_WARN, unitOf } from './config.js';
 
 const fmt = (n) => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
@@ -80,6 +80,17 @@ export function validateWorkout(workout, opts = {}) {
     }
     if (config && LEVELS[config.level] && ex.difficulty > LEVELS[config.level].n) {
       Wn('LEVEL', `«${label}» es de nivel ${['', 'principiante', 'intermedio', 'avanzado'][ex.difficulty]}, por encima de tu nivel.`, it.id);
+    }
+  }
+
+  // ─ aletas: una vez puestas no se sacan
+  if (config && (config.equipment || []).includes('fins')) {
+    let on = false;
+    for (const it of items) {
+      if (it.fins === true) {
+        on = true;
+        if (finsMode(BY_ID[it.exId]) === 'never') Wn('FINS_NOT_ALLOWED', `«${it.name}» no se hace con aletas.`, it.id);
+      } else if (on) Wn('FINS_ORDER', `«${it.name}» va sin aletas después de una serie con aletas: tendrías que sacártelas.`, it.id);
     }
   }
 
