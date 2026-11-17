@@ -1,7 +1,7 @@
 // Modo entrenamiento en vivo y resumen final. Los tiempos salen siempre de
 // marcas de reloj reales (session.js), nunca de contadores que se pierdan al
 // bloquear la pantalla o cambiar de pestaña.
-import { html, useState, useEffect, useRef, Icon, Art, useNow, beep, buzz, fmtM, laps, lapWord, clock, clockMs, tenth, pace } from './kit.js';
+import { html, useState, useEffect, useRef, Icon, Art, FinsTag, useNow, beep, buzz, fmtM, laps, lapWord, clock, clockMs, tenth, pace } from './kit.js';
 import { BLOCKS, BLOCK_ORDER, BY_ID, CATEGORIES, STROKES, intensityText, RPE_LABEL, exerciseById } from '../library.js';
 import * as S from '../engine/session.js';
 
@@ -89,11 +89,13 @@ function NextUp({ cur, nxt, pool, rest }) {
   const same = cur && cur.exId === nxt.exId && cur.variantId === nxt.variantId && cur.block === nxt.block;
   const cat = nex && CATEGORIES.find((c) => c.id === nex.category);
   const lapsN = nxt.dist / (2 * pool);
+  const putOn = nxt.fins === true && cur && cur.fins === false;
   const meta = [cat && cat.short, nex && STROKES[nex.stroke], nxt.dist + ' m (' + lapsN + (lapsN === 1 ? ' ida y vuelta' : ' idas y vueltas') + ')', intensityText(nxt)].filter(Boolean).join(' · ');
   return html`<div className=${'nextup' + (rest ? ' withrest' : '')}>
     ${head}
     <span className="eyebrow">Siguiente · ${same ? `repetición ${nxt.rep} de ${nxt.reps}` : BLOCKS[nxt.block].name}</span>
-    <b>${nxt.name}</b>
+    ${putOn && html`<span className="finsalert">🧜 Ponete las aletas en este descanso. Ya no te las sacás.</span>`}
+    <b>${nxt.name}<${FinsTag} it=${nxt}/></b>
     <span className="nl">${meta}</span>
     ${nex && nex.desc && html`<span className="nl d">${nex.desc}</span>`}
   </div>`;
@@ -154,6 +156,7 @@ export function Training({ session, setSession, pool, onExit }) {
       <div className="body">
         <span className="eyebrow">${BLOCKS[step.block].name} · repetición ${step.rep} de ${step.reps}</span>
         <div className="ex-name">${step.name}</div>
+        ${step.fins !== undefined && html`<div className=${'finsbar ' + (step.fins ? 'on' : 'off')}><${FinsTag} it=${step}/>${step.fins ? html`<span>${s.idx > 0 && s.steps[s.idx - 1].fins === false ? 'Ponete las aletas ahora' : 'No te las saques'}</span>` : html`<span>Todavía sin aletas</span>`}</div>`}
         <div className="facts">
           <div><b className="num">${step.dist} m</b><span>${step.dist / (2 * pool)} ${step.dist / (2 * pool) === 1 ? 'ida y vuelta' : 'idas y vueltas'}</span></div>
           <div><b className="num">${intensityText(step)}</b><span>${RPE_LABEL[step.rpe]}</span></div>

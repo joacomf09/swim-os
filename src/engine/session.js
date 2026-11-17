@@ -15,7 +15,7 @@ export function flattenSteps(workout) {
     for (let r = 1; r <= it.reps; r++) {
       steps.push({
         itemId: it.id, block: it.block, exId: it.exId, variantId: it.variantId, name: it.name,
-        rep: r, reps: it.reps, dist: it.dist, rest: it.rest, rpe: it.rpe, rpeStart: it.rpeStart || 0, note: it.note || '',
+        rep: r, reps: it.reps, dist: it.dist, rest: it.rest, rpe: it.rpe, rpeStart: it.rpeStart || 0, note: it.note || '', ...(it.fins !== undefined ? { fins: it.fins } : {}),
       });
     }
   }

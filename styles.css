@@ -476,3 +476,16 @@ select{min-height:38px;padding:0 10px;border-radius:999px;border:1px solid var(-
 .ov .confirm small{display:block;font-weight:400;font-size:13px;color:var(--muted);margin-top:2px}
 .ov .confirm div{flex-direction:column;gap:10px}
 .ov .confirm .btn{min-height:52px;width:100%}
+
+/* Aletas */
+.fins-tag{display:inline-block;margin-left:8px;padding:2px 8px;border-radius:999px;font:700 11px/1.5 var(--f-body);letter-spacing:.06em;vertical-align:middle;white-space:nowrap}
+.fins-tag.on{background:var(--aqua);color:#031027}
+.fins-tag.off{background:transparent;border:1px solid var(--line-2);color:var(--muted)}
+.finsbar{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--muted)}
+.finsbar .fins-tag{margin-left:0}
+.finsbar.on span:last-child{color:var(--ink);font-weight:700}
+.finsalert{display:block;margin:2px 0 4px;padding:8px 10px;border-radius:10px;background:var(--aqua);color:#031027;font-weight:700;font-size:14px}
+.ed-b .field .seg{display:flex}
+.ed-b .field .seg button{flex:1;min-height:44px}
+.ed-b .field .seg button[aria-pressed="true"]{background:var(--electric);color:#fff}
+.ed-b .field .seg button:disabled{opacity:.4}

@@ -150,3 +150,9 @@ export function beep(freq = 880, ms = 140) {
   } catch (e) { /* sin audio */ }
 }
 export function buzz(p) { try { if (navigator.vibrate) navigator.vibrate(p); } catch (e) { /* iOS no vibra */ } }
+
+/** Etiqueta de aletas: solo aparece en rutinas que usan aletas. */
+export function FinsTag({ it }) {
+  if (!it || it.fins === undefined) return null;
+  return html`<span className=${'fins-tag ' + (it.fins ? 'on' : 'off')}>${it.fins ? 'CON ALETAS' : 'SIN ALETAS'}</span>`;
+}

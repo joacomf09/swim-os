@@ -79,6 +79,7 @@ function StepEquipment({ cfg, set, skipped }) {
     <h2>¿Qué material tenés hoy?</h2>
     <div className="eqgrid">${EQUIPMENT_ORDER.map((e) => html`<button key=${e} type="button" className=${'opt eq' + (cfg.equipment.includes(e) ? ' on' : '')} aria-pressed=${cfg.equipment.includes(e)} onClick=${() => toggle(e)}><b>${EQUIPMENT[e].name}</b></button>`)}
       <button type="button" className=${'opt eq' + (none ? ' on' : '')} aria-pressed=${none} onClick=${() => set({ equipment: [] })}><b>Sin equipamiento</b></button></div>
+    ${cfg.equipment.includes('fins') && html`<p className="hint">🧜 Aletas: la primera parte va sin aletas; cuando te las ponés (desde el bloque principal) no te las sacás más. Cada serie indica si es CON o SIN aletas.</p>`}
     <label className="check"><input type="checkbox" checked=${cfg.allowNoGear} onChange=${(e) => set({ allowNoGear: e.target.checked })}/>
       <span><b>Permitir alternativas sin material</b><small>Si falta el material, usar una versión equivalente (por ejemplo, brazos con puños cerrados en lugar de palas). Si lo dejás apagado, esos ejercicios no aparecen.</small></span></label>
     ${skipped.length > 0 && html`<div className="note bad"><b>No van a aparecer:</b><ul>${skipped.slice(0, 8).map((s) => html`<li key=${s.id}>${s.name} <span className="muted">— ${s.reason.toLowerCase()}</span></li>`)}</ul></div>`}

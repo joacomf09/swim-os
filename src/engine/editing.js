@@ -7,10 +7,11 @@ import { plannedMeters, meters, validateWorkout } from './validator.js';
 import { allowedDistances } from './candidates.js';
 import { hashSeed } from './rng.js';
 import { unitOf, cycleOf } from './config.js';
+import { propagateFins, usesFins } from './fins.js';
 
 let counter = 0;
 const uid = () => `m${Date.now().toString(36)}${(counter++).toString(36)}`;
-const touch = (w, items) => ({ ...w, items, edited: true });
+const touch = (w, items) => propagateFins({ ...w, items, edited: true });
 const inBlockOrder = (items) => BLOCK_ORDER.flatMap((b) => items.filter((i) => i.block === b));
 
 /** Estado de la distancia: planificada vs objetivo. */
@@ -91,7 +92,7 @@ export function addItem(w, block, exId, variantId) {
   const item = {
     id: uid(), block, exId, variantId: v.id, name: itemName(ex, v.id === 'base' ? null : v, noGear),
     reps: v.reps[0], dist, rest: Math.round((v.rest[0] + v.rest[1]) / 2 / 5) * 5,
-    rpe: Math.round((v.rpe[0] + v.rpe[1]) / 2), note: v.note || '', manual: true, ...(noGear ? { noGear: true } : {}),
+    rpe: Math.round((v.rpe[0] + v.rpe[1]) / 2), note: v.note || '', manual: true, ...(noGear ? { noGear: true } : {}), ...(usesFins(w.config) ? { fins: false } : {}),
   };
   return touch(w, inBlockOrder([...w.items, item]));
 }
